@@ -1,0 +1,563 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "firstName": "Admin",
+      "lastName": "Système",
+      "email": "admin@dakartech.sn",
+      "phone": "+221770000000",
+      "role": "ADMIN",
+      "status": "ACTIVE",
+      "walletBalance": 0,
+      "createdAt": "2026-01-05T09:00:00.000Z",
+      "updatedAt": "2026-01-05T09:00:00.000Z"
+    },
+    {
+      "id": "u2",
+      "firstName": "Fatou",
+      "lastName": "Ndiaye",
+      "email": "fatou.ndiaye@example.sn",
+      "phone": "+221771111111",
+      "role": "CLIENT",
+      "status": "ACTIVE",
+      "walletBalance": 65000,
+      "createdAt": "2026-01-10T10:00:00.000Z",
+      "updatedAt": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "u3",
+      "firstName": "Moussa",
+      "lastName": "Diop",
+      "email": "moussa.diop@example.sn",
+      "phone": "+221772222222",
+      "role": "CLIENT",
+      "status": "ACTIVE",
+      "walletBalance": 65000,
+      "createdAt": "2026-01-15T10:00:00.000Z",
+      "updatedAt": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "id": "u4",
+      "firstName": "Awa",
+      "lastName": "Sarr",
+      "email": "awa.sarr@example.sn",
+      "phone": "+221773333333",
+      "role": "CLIENT",
+      "status": "ACTIVE",
+      "walletBalance": 545000,
+      "createdAt": "2026-02-01T09:00:00.000Z",
+      "updatedAt": "2026-02-01T09:00:00.000Z"
+    },
+    {
+      "id": "u5",
+      "firstName": "Ibrahima",
+      "lastName": "Ba",
+      "email": "ibrahima.ba@example.sn",
+      "phone": "+221774444444",
+      "role": "CLIENT",
+      "status": "SUSPENDED",
+      "walletBalance": 7000,
+      "createdAt": "2026-02-10T09:00:00.000Z",
+      "updatedAt": "2026-05-15T14:00:00.000Z"
+    },
+    {
+      "id": "u6",
+      "firstName": "Mariama",
+      "lastName": "Cissé",
+      "email": "mariama.cisse@example.sn",
+      "phone": "+221775555555",
+      "role": "CLIENT",
+      "status": "ACTIVE",
+      "walletBalance": 940000,
+      "createdAt": "2026-02-20T09:00:00.000Z",
+      "updatedAt": "2026-02-20T09:00:00.000Z"
+    },
+    {
+      "id": "u7",
+      "firstName": "Cheikh",
+      "lastName": "Fall",
+      "email": "cheikh.fall@example.sn",
+      "phone": "+221776666666",
+      "role": "CLIENT",
+      "status": "SUSPENDED",
+      "walletBalance": 9000,
+      "createdAt": "2026-03-01T09:00:00.000Z",
+      "updatedAt": "2026-06-10T11:00:00.000Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx1",
+      "type": "DEPOT",
+      "status": "REUSSIE",
+      "amount": 100000,
+      "receiverId": "u2",
+      "description": "Dépôt initial",
+      "createdAt": "2026-01-10T10:05:00.000Z"
+    },
+    {
+      "id": "tx2",
+      "type": "DEPOT",
+      "status": "REUSSIE",
+      "amount": 50000,
+      "receiverId": "u3",
+      "description": "Dépôt initial",
+      "createdAt": "2026-01-15T10:05:00.000Z"
+    },
+    {
+      "id": "tx3",
+      "type": "RETRAIT",
+      "status": "REUSSIE",
+      "amount": 20000,
+      "senderId": "u2",
+      "description": "Retrait guichet",
+      "createdAt": "2026-02-01T09:00:00.000Z"
+    },
+    {
+      "id": "tx4",
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 15000,
+      "senderId": "u2",
+      "receiverId": "u3",
+      "description": "Remboursement dette personnelle",
+      "createdAt": "2026-02-10T14:00:00.000Z"
+    },
+    {
+      "id": "tx5",
+      "type": "DEPOT",
+      "status": "REUSSIE",
+      "amount": 400000,
+      "receiverId": "u4",
+      "description": "Dépôt capital commerce",
+      "createdAt": "2026-02-01T09:30:00.000Z"
+    },
+    {
+      "id": "tx6",
+      "type": "RETRAIT",
+      "status": "ECHOUEE",
+      "amount": 500000,
+      "senderId": "u4",
+      "description": "Solde insuffisant",
+      "createdAt": "2026-02-15T12:00:00.000Z"
+    },
+    {
+      "id": "tx7",
+      "type": "DEPOT",
+      "status": "REUSSIE",
+      "amount": 10000,
+      "receiverId": "u5",
+      "description": "Dépôt initial",
+      "createdAt": "2026-02-10T09:10:00.000Z"
+    },
+    {
+      "id": "tx8",
+      "type": "RETRAIT",
+      "status": "REUSSIE",
+      "amount": 3000,
+      "senderId": "u5",
+      "description": "Retrait guichet",
+      "createdAt": "2026-03-01T16:00:00.000Z"
+    },
+    {
+      "id": "tx9",
+      "type": "DEPOT",
+      "status": "REUSSIE",
+      "amount": 800000,
+      "receiverId": "u6",
+      "description": "Dépôt initial",
+      "createdAt": "2026-02-20T09:10:00.000Z"
+    },
+    {
+      "id": "tx10",
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 50000,
+      "senderId": "u6",
+      "receiverId": "u4",
+      "description": "Virement famille",
+      "createdAt": "2026-03-05T10:00:00.000Z"
+    },
+    {
+      "id": "tx11",
+      "type": "DEPOT",
+      "status": "REUSSIE",
+      "amount": 15000,
+      "receiverId": "u7",
+      "description": "Dépôt initial",
+      "createdAt": "2026-03-01T09:10:00.000Z"
+    },
+    {
+      "id": "tx12",
+      "type": "RETRAIT",
+      "status": "ANNULEE",
+      "amount": 20000,
+      "senderId": "u7",
+      "description": "Annulé par l'utilisateur",
+      "createdAt": "2026-03-15T11:00:00.000Z"
+    },
+    {
+      "id": "tx13",
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 200000,
+      "receiverId": "u4",
+      "relatedLoanId": "loan4",
+      "description": "Décaissement prêt extension boutique",
+      "createdAt": "2026-05-15T10:00:00.000Z"
+    },
+    {
+      "id": "tx14",
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 52500,
+      "senderId": "u4",
+      "relatedLoanId": "loan4",
+      "description": "Remboursement échéance 1/4",
+      "createdAt": "2026-06-14T09:00:00.000Z"
+    },
+    {
+      "id": "tx15",
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 52500,
+      "senderId": "u4",
+      "relatedLoanId": "loan4",
+      "description": "Remboursement échéance 2/4",
+      "createdAt": "2026-07-15T09:00:00.000Z"
+    },
+    {
+      "id": "tx16",
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 300000,
+      "receiverId": "u6",
+      "relatedLoanId": "loan5",
+      "description": "Décaissement prêt achat véhicule utilitaire",
+      "createdAt": "2026-03-05T10:00:00.000Z"
+    },
+    {
+      "id": "tx17",
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 55000,
+      "senderId": "u6",
+      "relatedLoanId": "loan5",
+      "description": "Remboursement échéance 1/6",
+      "createdAt": "2026-04-04T09:00:00.000Z"
+    },
+    {
+      "id": "tx18",
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 55000,
+      "senderId": "u6",
+      "relatedLoanId": "loan5",
+      "description": "Remboursement échéance 2/6",
+      "createdAt": "2026-05-06T09:00:00.000Z"
+    },
+    {
+      "id": "tx19",
+      "type": "REMBOURSEMENT_PRET",
+      "status": "ECHOUEE",
+      "amount": 55000,
+      "senderId": "u6",
+      "relatedLoanId": "loan5",
+      "description": "Échec prélèvement échéance 3/6",
+      "createdAt": "2026-06-05T09:00:00.000Z"
+    },
+    {
+      "id": "tx20",
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 150000,
+      "receiverId": "u7",
+      "relatedLoanId": "loan6",
+      "description": "Décaissement prêt fonds d'urgence",
+      "createdAt": "2026-01-25T10:00:00.000Z"
+    },
+    {
+      "id": "tx21",
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 156000,
+      "senderId": "u7",
+      "relatedLoanId": "loan6",
+      "description": "Remboursement intégral",
+      "createdAt": "2026-02-20T10:00:00.000Z"
+    },
+    {
+      "id": "tx22",
+      "type": "VIREMENT",
+      "status": "EN_ATTENTE",
+      "amount": 25000,
+      "senderId": "u3",
+      "receiverId": "u2",
+      "description": "Virement en cours de traitement",
+      "createdAt": "2026-08-10T09:00:00.000Z"
+    }
+  ],
+  "loans": [
+    {
+      "id": "loan1",
+      "userId": "u2",
+      "amount": 100000,
+      "interestRate": 5,
+      "durationMonths": 6,
+      "monthlyPayment": 17500,
+      "remainingBalance": 100000,
+      "status": "EN_ATTENTE",
+      "purpose": "Achat matériel informatique",
+      "requestDate": "2026-08-05T08:30:00.000Z"
+    },
+    {
+      "id": "loan2",
+      "userId": "u3",
+      "amount": 80000,
+      "interestRate": 5,
+      "durationMonths": 4,
+      "monthlyPayment": 21000,
+      "remainingBalance": 80000,
+      "status": "APPROUVE",
+      "purpose": "Fonds de roulement commerce",
+      "requestDate": "2026-07-20T08:00:00.000Z",
+      "approvalDate": "2026-07-25T10:00:00.000Z",
+      "approvedBy": "u1"
+    },
+    {
+      "id": "loan3",
+      "userId": "u5",
+      "amount": 60000,
+      "interestRate": 6,
+      "durationMonths": 3,
+      "monthlyPayment": 20600,
+      "remainingBalance": 60000,
+      "status": "REJETE",
+      "purpose": "Achat téléphone",
+      "requestDate": "2026-06-10T08:00:00.000Z",
+      "approvalDate": "2026-06-12T09:00:00.000Z",
+      "approvedBy": "u1"
+    },
+    {
+      "id": "loan4",
+      "userId": "u4",
+      "amount": 200000,
+      "interestRate": 5,
+      "durationMonths": 4,
+      "monthlyPayment": 52500,
+      "remainingBalance": 95000,
+      "status": "EN_COURS",
+      "purpose": "Extension boutique",
+      "requestDate": "2026-05-10T08:00:00.000Z",
+      "approvalDate": "2026-05-12T09:00:00.000Z",
+      "approvedBy": "u1",
+      "startDate": "2026-05-15T10:00:00.000Z"
+    },
+    {
+      "id": "loan5",
+      "userId": "u6",
+      "amount": 300000,
+      "interestRate": 5,
+      "durationMonths": 6,
+      "monthlyPayment": 55000,
+      "remainingBalance": 190000,
+      "status": "EN_RETARD",
+      "purpose": "Achat véhicule utilitaire",
+      "requestDate": "2026-03-01T08:00:00.000Z",
+      "approvalDate": "2026-03-03T09:00:00.000Z",
+      "approvedBy": "u1",
+      "startDate": "2026-03-05T10:00:00.000Z"
+    },
+    {
+      "id": "loan6",
+      "userId": "u7",
+      "amount": 150000,
+      "interestRate": 4,
+      "durationMonths": 1,
+      "monthlyPayment": 156000,
+      "remainingBalance": 0,
+      "status": "REMBOURSE",
+      "purpose": "Fonds d'urgence",
+      "requestDate": "2026-01-20T08:00:00.000Z",
+      "approvalDate": "2026-01-22T09:00:00.000Z",
+      "approvedBy": "u1",
+      "startDate": "2026-01-25T10:00:00.000Z",
+      "endDate": "2026-02-25T00:00:00.000Z"
+    }
+  ],
+  "repayments": [
+    {
+      "id": "rp1",
+      "loanId": "loan4",
+      "userId": "u4",
+      "installmentNumber": 1,
+      "dueDate": "2026-06-15T00:00:00.000Z",
+      "amountDue": 52500,
+      "amountPaid": 52500,
+      "paymentDate": "2026-06-14T09:00:00.000Z",
+      "status": "PAYE"
+    },
+    {
+      "id": "rp2",
+      "loanId": "loan4",
+      "userId": "u4",
+      "installmentNumber": 2,
+      "dueDate": "2026-07-15T00:00:00.000Z",
+      "amountDue": 52500,
+      "amountPaid": 52500,
+      "paymentDate": "2026-07-15T09:00:00.000Z",
+      "status": "PAYE"
+    },
+    {
+      "id": "rp3",
+      "loanId": "loan4",
+      "userId": "u4",
+      "installmentNumber": 3,
+      "dueDate": "2026-08-15T00:00:00.000Z",
+      "amountDue": 52500,
+      "status": "PLANIFIE"
+    },
+    {
+      "id": "rp4",
+      "loanId": "loan4",
+      "userId": "u4",
+      "installmentNumber": 4,
+      "dueDate": "2026-09-15T00:00:00.000Z",
+      "amountDue": 52500,
+      "status": "PLANIFIE"
+    },
+    {
+      "id": "rp5",
+      "loanId": "loan5",
+      "userId": "u6",
+      "installmentNumber": 1,
+      "dueDate": "2026-04-05T00:00:00.000Z",
+      "amountDue": 55000,
+      "amountPaid": 55000,
+      "paymentDate": "2026-04-04T09:00:00.000Z",
+      "status": "PAYE"
+    },
+    {
+      "id": "rp6",
+      "loanId": "loan5",
+      "userId": "u6",
+      "installmentNumber": 2,
+      "dueDate": "2026-05-05T00:00:00.000Z",
+      "amountDue": 55000,
+      "amountPaid": 55000,
+      "paymentDate": "2026-05-06T09:00:00.000Z",
+      "status": "PAYE"
+    },
+    {
+      "id": "rp7",
+      "loanId": "loan5",
+      "userId": "u6",
+      "installmentNumber": 3,
+      "dueDate": "2026-06-05T00:00:00.000Z",
+      "amountDue": 55000,
+      "lateFee": 2500,
+      "status": "EN_RETARD"
+    },
+    {
+      "id": "rp8",
+      "loanId": "loan5",
+      "userId": "u6",
+      "installmentNumber": 4,
+      "dueDate": "2026-07-05T00:00:00.000Z",
+      "amountDue": 55000,
+      "status": "IMPAYE"
+    },
+    {
+      "id": "rp9",
+      "loanId": "loan5",
+      "userId": "u6",
+      "installmentNumber": 5,
+      "dueDate": "2026-08-05T00:00:00.000Z",
+      "amountDue": 55000,
+      "lateFee": 2500,
+      "status": "EN_RETARD"
+    },
+    {
+      "id": "rp10",
+      "loanId": "loan5",
+      "userId": "u6",
+      "installmentNumber": 6,
+      "dueDate": "2026-09-05T00:00:00.000Z",
+      "amountDue": 55000,
+      "status": "PLANIFIE"
+    },
+    {
+      "id": "rp11",
+      "loanId": "loan6",
+      "userId": "u7",
+      "installmentNumber": 1,
+      "dueDate": "2026-02-25T00:00:00.000Z",
+      "amountDue": 156000,
+      "amountPaid": 156000,
+      "paymentDate": "2026-02-20T09:00:00.000Z",
+      "status": "PAYE"
+    }
+  ],
+  "creditScores": [
+    {
+      "id": "cs1",
+      "userId": "u2",
+      "score": 650,
+      "category": "BON",
+      "totalLoans": 0,
+      "onTimeRepayments": 0,
+      "lateRepayments": 0,
+      "calculatedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "cs2",
+      "userId": "u3",
+      "score": 700,
+      "category": "BON",
+      "totalLoans": 0,
+      "onTimeRepayments": 0,
+      "lateRepayments": 0,
+      "calculatedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "cs3",
+      "userId": "u4",
+      "score": 780,
+      "category": "EXCELLENT",
+      "totalLoans": 1,
+      "onTimeRepayments": 2,
+      "lateRepayments": 0,
+      "calculatedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "cs4",
+      "userId": "u5",
+      "score": 480,
+      "category": "A_RISQUE",
+      "totalLoans": 0,
+      "onTimeRepayments": 0,
+      "lateRepayments": 0,
+      "calculatedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "cs5",
+      "userId": "u6",
+      "score": 420,
+      "category": "MAUVAIS_PAYEUR",
+      "totalLoans": 1,
+      "onTimeRepayments": 2,
+      "lateRepayments": 3,
+      "calculatedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "cs6",
+      "userId": "u7",
+      "score": 810,
+      "category": "EXCELLENT",
+      "totalLoans": 1,
+      "onTimeRepayments": 1,
+      "lateRepayments": 0,
+      "calculatedAt": "2026-08-01T00:00:00.000Z"
+    }
+  ]
+}
