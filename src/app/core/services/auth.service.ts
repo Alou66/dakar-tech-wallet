@@ -4,7 +4,7 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, map, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { User } from '../models/user.model';
+import { User, UserStatus } from '../models/user.model';
 
 const CURRENT_USER_STORAGE_KEY = 'dakar-tech-wallet.currentUser';
 
@@ -33,6 +33,9 @@ export class AuthService {
         const user = users[0];
         if (!user) {
           throw new Error('Aucun utilisateur trouvé pour cet email.');
+        }
+        if (user.status === UserStatus.SUSPENDED) {
+          throw new Error('Votre compte a été suspendu. Contactez un administrateur.');
         }
         return user;
       }),

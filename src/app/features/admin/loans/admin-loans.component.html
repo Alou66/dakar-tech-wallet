@@ -1,0 +1,179 @@
+<div class="loans-page">
+  <div class="page-header">
+    <h1 class="page-title">Prêts</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Chargement des prêts...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p class="error-message">{{ error() }}</p>
+      <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (!hasLoans()) {
+    <div class="empty-state">
+      <p>Aucune demande de prêt enregistrée pour le moment.</p>
+    </div>
+  } @else {
+    <div class="filters-bar">
+      <input
+        type="text"
+        class="form-input search-input"
+        placeholder="Rechercher par nom, email ou n° de compte"
+        [value]="searchTerm()"
+        (input)="onSearchChange($event)"
+      />
+
+      <select class="form-input" [value]="statusFilter()" (change)="onStatusFilterChange($event)">
+        <option value="ALL">Tous les statuts</option>
+        <option [value]="LoanStatus.EN_ATTENTE">En attente</option>
+        <option [value]="LoanStatus.APPROUVE">Approuvé</option>
+        <option [value]="LoanStatus.REJETE">Rejeté</option>
+        <option [value]="LoanStatus.EN_COURS">En cours</option>
+        <option [value]="LoanStatus.EN_RETARD">En retard</option>
+        <option [value]="LoanStatus.REMBOURSE">Remboursé</option>
+      </select>
+
+      <select class="form-input" [value]="categoryFilter()" (change)="onCategoryFilterChange($event)">
+        <option value="ALL">Toutes les catégories de score</option>
+        <option [value]="CreditScoreCategory.EXCELLENT">Excellent</option>
+        <option [value]="CreditScoreCategory.BON">Bon</option>
+        <option [value]="CreditScoreCategory.A_RISQUE">À risque</option>
+        <option [value]="CreditScoreCategory.MAUVAIS_PAYEUR">Mauvais payeur</option>
+      </select>
+
+      <button type="button" class="reset-btn" [disabled]="!hasActiveFilters()" (click)="resetFilters()">
+        Réinitialiser
+      </button>
+    </div>
+
+    @if (pendingActionLoan(); as pendingLoan) {
+      <div class="confirm-banner">
+        <p>
+          @if (pendingAction()?.action === 'approve') {
+            Valider la demande de prêt de <strong>{{ userLabel(pendingLoan.userId) }}</strong>
+            pour <strong>{{ formatCurrency(pendingLoan.amount) }}</strong> ?
+            Le montant sera automatiquement crédité sur son portefeuille.
+          } @else if (pendingAction()?.action === 'reject') {
+            Rejeter la demande de prêt de <strong>{{ userLabel(pendingLoan.userId) }}</strong>
+            pour <strong>{{ formatCurrency(pendingLoan.amount) }}</strong> ?
+          } @else {
+            Reprendre la génération de l'échéancier du prêt de <strong>{{ userLabel(pendingLoan.userId) }}</strong>
+            pour <strong>{{ formatCurrency(pendingLoan.amount) }}</strong> ?
+            Le portefeuille du client ne sera pas recrédité : le décaissement a déjà eu lieu.
+          }
+        </p>
+        <div class="confirm-actions">
+          <button type="button" class="confirm-btn" [disabled]="actionSubmitting()" (click)="confirmAction()">
+            @if (actionSubmitting()) {
+              <span>Traitement...</span>
+            } @else {
+              <span>Confirmer</span>
+            }
+          </button>
+          <button type="button" class="cancel-btn" [disabled]="actionSubmitting()" (click)="cancelAction()">
+            Annuler
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (actionError()) {
+      <p class="error-message">{{ actionError() }}</p>
+    }
+
+    @if (actionSuccess()) {
+      <p class="success-message">{{ actionSuccess() }}</p>
+    }
+
+    @if (!hasFilteredResults()) {
+      <div class="empty-state">
+        <p>Aucune demande de prêt ne correspond à ces critères.</p>
+      </div>
+    } @else {
+      <div class="loans-table-wrapper">
+        <table class="loans-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Montant</th>
+              <th>Motif</th>
+              <th>Durée</th>
+              <th>Taux</th>
+              <th>Date de demande</th>
+              <th>Statut</th>
+              <th>Capital restant dû</th>
+              <th>Score de solvabilité</th>
+              <th>Date d'approbation</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (loan of filteredLoans(); track loan.id) {
+              <tr>
+                <td class="cell-user">
+                  <span class="user-name">{{ userLabel(loan.userId) }}</span>
+                  @if (userAccountNumber(loan.userId); as accountNumber) {
+                    <span class="user-account">{{ accountNumber }}</span>
+                  }
+                </td>
+                <td class="cell-amount">{{ formatCurrency(loan.amount) }}</td>
+                <td class="cell-purpose">{{ loan.purpose || '—' }}</td>
+                <td class="cell-duration">{{ loan.durationMonths }} mois</td>
+                <td class="cell-rate">{{ loan.interestRate }} %</td>
+                <td class="cell-date">{{ formatDate(loan.requestDate) }}</td>
+                <td class="cell-status">
+                  <span class="badge {{ statusClass(loan.status) }}">{{ statusLabel(loan.status) }}</span>
+                </td>
+                <td class="cell-amount">{{ formatCurrency(loan.remainingBalance) }}</td>
+                <td class="cell-status">
+                  @if (creditScoreFor(loan.userId); as score) {
+                    <span class="badge {{ creditScoreCategoryClass(score.category) }}">
+                      {{ score.score }} · {{ creditScoreCategoryLabel(score.category) }}
+                    </span>
+                  } @else {
+                    <span class="no-value">—</span>
+                  }
+                </td>
+                <td class="cell-date">{{ formatDate(loan.approvalDate) }}</td>
+                <td class="cell-actions">
+                  @if (isPending(loan)) {
+                    <button
+                      type="button"
+                      class="action-btn action-approve"
+                      [disabled]="actionSubmitting()"
+                      (click)="requestApprove(loan)"
+                    >
+                      Valider
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn action-reject"
+                      [disabled]="actionSubmitting()"
+                      (click)="requestReject(loan)"
+                    >
+                      Rejeter
+                    </button>
+                  } @else if (canResumeSchedule(loan)) {
+                    <button
+                      type="button"
+                      class="action-btn action-approve"
+                      [disabled]="actionSubmitting()"
+                      (click)="requestResumeSchedule(loan)"
+                    >
+                      Générer l'échéancier
+                    </button>
+                  } @else {
+                    <span class="no-value">—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

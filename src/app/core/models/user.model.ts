@@ -14,6 +14,7 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;
+  accountNumber: string;
   role: UserRole;
   status: UserStatus;
   walletBalance: number;

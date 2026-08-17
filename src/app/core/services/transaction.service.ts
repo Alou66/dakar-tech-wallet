@@ -18,6 +18,11 @@ export class TransactionService {
     return this.http.get<Transaction>(`${this.resourceUrl}/${id}`);
   }
 
+  getByLoan(loanId: string): Observable<Transaction[]> {
+    const params = new HttpParams().set('relatedLoanId', loanId);
+    return this.http.get<Transaction[]>(this.resourceUrl, { params });
+  }
+
   getByUser(userId: string): Observable<Transaction[]> {
     const asSender = this.http.get<Transaction[]>(this.resourceUrl, {
       params: new HttpParams().set('senderId', userId),
@@ -38,6 +43,14 @@ export class TransactionService {
   }
 
   create(transaction: Omit<Transaction, 'id' | 'createdAt'>): Observable<Transaction> {
-    return this.http.post<Transaction>(this.resourceUrl, transaction);
+    const payload: Omit<Transaction, 'id'> = {
+      ...transaction,
+      createdAt: new Date().toISOString(),
+    };
+    return this.http.post<Transaction>(this.resourceUrl, payload);
+  }
+
+  update(id: string, changes: Partial<Transaction>): Observable<Transaction> {
+    return this.http.patch<Transaction>(`${this.resourceUrl}/${id}`, changes);
   }
 }

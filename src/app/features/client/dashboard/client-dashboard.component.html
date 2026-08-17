@@ -1,0 +1,119 @@
+<div class="dashboard">
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Chargement du tableau de bord...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p class="error-message">{{ error() }}</p>
+      <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+    </div>
+  } @else {
+    <div class="stats-grid">
+      <div class="stat-card stat-balance">
+        <span class="stat-label">Solde du portefeuille</span>
+        <span class="stat-value">{{ formatCurrency(walletBalance()) }}</span>
+      </div>
+
+      <div class="stat-card stat-in">
+        <span class="stat-label">Total des entrées</span>
+        <span class="stat-value">{{ formatCurrency(totalIn()) }}</span>
+      </div>
+
+      <div class="stat-card stat-out">
+        <span class="stat-label">Total des sorties</span>
+        <span class="stat-value">{{ formatCurrency(totalOut()) }}</span>
+      </div>
+
+      <div class="stat-card stat-score">
+        <span class="stat-label">Score de solvabilité</span>
+        @if (creditScore()) {
+          <div class="score-content">
+            <span class="stat-value">{{ creditScore()!.score }}</span>
+            <span class="score-badge {{ scoreCategoryClass(creditScore()!.category) }}">
+              {{ scoreCategoryLabel(creditScore()!.category) }}
+            </span>
+          </div>
+        } @else {
+          <span class="stat-value stat-muted">N/A</span>
+        }
+      </div>
+    </div>
+
+    <div class="dashboard-cols">
+      <div class="col-loans">
+        <h2 class="section-title">Prêts</h2>
+
+        <div class="loan-summary">
+          <div class="loan-stat">
+            <span class="loan-stat-value">{{ activeLoansCount() }}</span>
+            <span class="loan-stat-label">En cours</span>
+          </div>
+          <div class="loan-stat">
+            <span class="loan-stat-value">{{ overdueLoansCount() }}</span>
+            <span class="loan-stat-label">En retard</span>
+          </div>
+        </div>
+
+        @if (activeLoans().length > 0) {
+          <h3 class="subsection-title">Résumé des prêts en cours</h3>
+          <div class="loan-list">
+            @for (loan of activeLoans(); track loan.id) {
+              <div class="loan-card">
+                <div class="loan-header">
+                  <span class="loan-purpose">{{ loan.purpose || 'Prêt sans objet' }}</span>
+                  <span class="badge {{ loanStatusClass(loan.status) }}">{{ loanStatusLabel(loan.status) }}</span>
+                </div>
+                <div class="loan-details">
+                  <div class="loan-detail">
+                    <span class="loan-detail-label">Montant</span>
+                    <span class="loan-detail-value">{{ formatCurrency(loan.amount) }}</span>
+                  </div>
+                  <div class="loan-detail">
+                    <span class="loan-detail-label">Reste à payer</span>
+                    <span class="loan-detail-value">{{ formatCurrency(loan.remainingBalance) }}</span>
+                  </div>
+                  <div class="loan-detail">
+                    <span class="loan-detail-label">Mensualité</span>
+                    <span class="loan-detail-value">{{ formatCurrency(loan.monthlyPayment) }}</span>
+                  </div>
+                  <div class="loan-detail">
+                    <span class="loan-detail-label">Durée</span>
+                    <span class="loan-detail-value">{{ loan.durationMonths }} mois</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">Aucun prêt en cours actuellement.</p>
+        }
+      </div>
+
+      <div class="col-transactions">
+        <h2 class="section-title">Dernières transactions</h2>
+        @if (recentTransactions().length > 0) {
+          <div class="transaction-list">
+            @for (tx of recentTransactions(); track tx.id) {
+              <div class="transaction-item">
+                <div class="tx-main">
+                  <span class="tx-description">{{ tx.description || transactionTypeLabel(tx.type) }}</span>
+                  <span class="tx-type">{{ transactionTypeLabel(tx.type) }}</span>
+                </div>
+                <div class="tx-meta">
+                  <span class="tx-amount {{ tx.senderId === currentUser()?.id ? 'amount-out' : 'amount-in' }}">
+                    {{ tx.senderId === currentUser()?.id ? '-' : '+' }}{{ formatCurrency(tx.amount) }}
+                  </span>
+                  <span class="tx-date">{{ tx.createdAt | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <span class="badge {{ transactionStatusClass(tx.status) }}">{{ tx.status }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">Aucune transaction enregistrée.</p>
+        }
+      </div>
+    </div>
+  }
+</div>

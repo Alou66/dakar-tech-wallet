@@ -1,0 +1,52 @@
+@if (open()) {
+  <div class="modal-backdrop" (click)="onBackdropClick()">
+    <div
+      class="modal-panel"
+      role="alertdialog"
+      aria-modal="true"
+      [attr.aria-label]="title()"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 class="modal-title">{{ title() }}</h2>
+
+      @if (message()) {
+        <p class="modal-message">{{ message() }}</p>
+      }
+
+      @if (details().length > 0) {
+        <dl class="modal-details">
+          @for (detail of details(); track detail.label) {
+            <div class="modal-detail-row">
+              <dt class="modal-detail-label">{{ detail.label }}</dt>
+              <dd class="modal-detail-value">{{ detail.value }}</dd>
+            </div>
+          }
+        </dl>
+      }
+
+      <div class="modal-actions">
+        <button
+          type="button"
+          class="modal-btn modal-btn-cancel"
+          [disabled]="loading()"
+          (click)="onCancel()"
+        >
+          {{ cancelLabel() }}
+        </button>
+        <button
+          type="button"
+          class="modal-btn modal-btn-confirm"
+          [disabled]="loading()"
+          (click)="onConfirm()"
+        >
+          @if (loading()) {
+            <span class="modal-spinner" aria-hidden="true"></span>
+            <span>Traitement en cours...</span>
+          } @else {
+            <span>{{ confirmLabel() }}</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

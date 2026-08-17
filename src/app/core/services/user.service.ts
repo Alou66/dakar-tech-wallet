@@ -18,8 +18,8 @@ export class UserService {
     return this.http.get<User>(`${this.resourceUrl}/${id}`);
   }
 
-  searchByPhone(phone: string): Observable<User[]> {
-    const params = new HttpParams().set('phone', phone);
+  searchByAccountNumber(accountNumber: string): Observable<User[]> {
+    const params = new HttpParams().set('accountNumber', accountNumber);
     return this.http.get<User[]>(this.resourceUrl, { params });
   }
 

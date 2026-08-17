@@ -1,0 +1,199 @@
+<div class="loan-detail-page">
+  <div class="page-header">
+    <a routerLink="/client/loans" class="back-link">← Mes prêts</a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Chargement du prêt...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p class="error-message">{{ error() }}</p>
+      <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (loan(); as loan) {
+    @if (accountSuspended()) {
+      <div class="error-message">
+        Votre compte est suspendu. Vous ne pouvez plus effectuer de remboursement.
+      </div>
+    }
+
+    <section class="loan-header-card">
+      <div class="loan-header-top">
+        <div>
+          <span class="loan-amount">{{ formatCurrency(loan.amount) }}</span>
+          @if (loan.purpose) {
+            <p class="loan-purpose">{{ loan.purpose }}</p>
+          }
+        </div>
+        <span class="badge badge-lg {{ loanStatusClass(loan.status) }}">{{ loanStatusLabel(loan.status) }}</span>
+      </div>
+
+      <div class="loan-info-grid">
+        <div class="loan-info">
+          <span class="loan-info-label">Capital restant dû</span>
+          <span class="loan-info-value">{{ formatCurrency(loan.remainingBalance) }}</span>
+        </div>
+        <div class="loan-info">
+          <span class="loan-info-label">Mensualité</span>
+          <span class="loan-info-value">{{ formatCurrency(loan.monthlyPayment) }}</span>
+        </div>
+        <div class="loan-info">
+          <span class="loan-info-label">Durée</span>
+          <span class="loan-info-value">{{ loan.durationMonths }} mois</span>
+        </div>
+        <div class="loan-info">
+          <span class="loan-info-label">Taux</span>
+          <span class="loan-info-value">{{ loan.interestRate }} %</span>
+        </div>
+        <div class="loan-info">
+          <span class="loan-info-label">Date de demande</span>
+          <span class="loan-info-value">{{ formatDate(loan.requestDate) }}</span>
+        </div>
+        <div class="loan-info">
+          <span class="loan-info-label">Date d'octroi</span>
+          <span class="loan-info-value">{{ formatDate(loan.startDate) }}</span>
+        </div>
+        @if (loan.endDate) {
+          <div class="loan-info">
+            <span class="loan-info-label">Date de fin</span>
+            <span class="loan-info-value">{{ formatDate(loan.endDate) }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    @if (sortedSchedule().length > 0) {
+      <section class="schedule-card">
+        <button type="button" class="schedule-toggle" (click)="toggleSchedule()">
+          <span>Échéancier ({{ sortedSchedule().length }} mensualité(s))</span>
+          <span class="schedule-toggle-icon">{{ scheduleExpanded() ? '▲' : '▼' }}</span>
+        </button>
+
+        @if (scheduleExpanded()) {
+          <div class="schedule-table-wrapper">
+            <table class="schedule-table">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Montant</th>
+                  <th>Échéance</th>
+                  <th>Statut</th>
+                  <th>Retard</th>
+                  <th>Pénalité</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (installment of sortedSchedule(); track installment.id) {
+                  <tr [class.row-late]="isLateRepayment(installment)">
+                    <td>{{ installment.installmentNumber }}</td>
+                    <td class="cell-amount">{{ formatCurrency(installment.amountDue) }}</td>
+                    <td class="cell-date">{{ formatDate(installment.dueDate) }}</td>
+                    <td class="cell-status">
+                      <span class="badge {{ repaymentStatusClass(installment.status) }}">
+                        {{ repaymentStatusLabel(installment.status) }}
+                      </span>
+                    </td>
+                    <td>{{ daysLate(installment) !== null ? daysLate(installment) + ' jour(s)' : '—' }}</td>
+                    <td class="cell-amount">{{ installment.lateFee ? formatCurrency(installment.lateFee) : '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+
+    @if (isRepayableLoan(loan)) {
+      <section class="repayment-card">
+        <h2 class="section-title">Rembourser ce prêt</h2>
+        <p class="wallet-balance">Solde disponible : <strong>{{ formatCurrency(walletBalance()) }}</strong></p>
+
+        <div class="repayment-actions">
+          <form [formGroup]="repaymentForm" (ngSubmit)="payInstallment()" class="repayment-action">
+            <h3 class="repayment-action-title">Payer une mensualité</h3>
+
+            @if (payableInstallments().length === 0) {
+              <p class="no-schedule">Aucune mensualité payable pour le moment.</p>
+            } @else {
+              <div class="form-group">
+                <label for="repaymentId" class="form-label">Mensualité à payer</label>
+                <select id="repaymentId" formControlName="repaymentId" class="form-input">
+                  <option value="" disabled>Sélectionner une mensualité</option>
+                  @for (installment of payableInstallments(); track installment.id) {
+                    <option [value]="installment.id">
+                      N°{{ installment.installmentNumber }} — {{ formatCurrency(installment.amountDue) }} — échéance {{ formatDate(installment.dueDate) }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              @if (selectedInstallment(); as installment) {
+                <p class="selected-amount">
+                  Montant à payer : <strong>{{ formatCurrency(selectedInstallmentAmount()) }}</strong>
+                </p>
+              }
+
+              @if (checkingRepayment()) {
+                <span class="field-hint">Vérification en cours...</span>
+              }
+              @if (repaymentCheckErrorMessage()) {
+                <span class="field-error">{{ repaymentCheckErrorMessage() }}</span>
+              }
+
+              <button type="submit" class="primary-btn" [disabled]="canPayInstallment() === false">
+                @if (repaymentSubmitting()) {
+                  <span>Paiement en cours...</span>
+                } @else if (checkingRepayment()) {
+                  <span>Vérification...</span>
+                } @else {
+                  <span>Payer cette mensualité</span>
+                }
+              </button>
+            }
+          </form>
+
+          <div class="repayment-action">
+            <h3 class="repayment-action-title">Rembourser le solde total</h3>
+            <p class="selected-amount">
+              Capital restant dû : <strong>{{ formatCurrency(loan.remainingBalance) }}</strong>
+            </p>
+            <button
+              type="button"
+              class="primary-btn primary-btn-outline"
+              [disabled]="canPayTotal() === false"
+              (click)="payTotal()"
+            >
+              @if (repaymentSubmitting()) {
+                <span>Paiement en cours...</span>
+              } @else {
+                <span>Rembourser le solde total</span>
+              }
+            </button>
+          </div>
+        </div>
+
+        @if (repaymentSuccessMessage()) {
+          <div class="success-message">{{ repaymentSuccessMessage() }}</div>
+        }
+        @if (repaymentErrorMessage()) {
+          <div class="error-message">{{ repaymentErrorMessage() }}</div>
+        }
+      </section>
+    }
+  }
+
+  <app-confirmation-modal
+    [open]="pendingAction() !== null"
+    [title]="confirmModalConfig().title"
+    [message]="confirmModalConfig().message"
+    [details]="confirmModalConfig().details"
+    [confirmLabel]="confirmModalConfig().confirmLabel"
+    cancelLabel="Annuler"
+    [loading]="repaymentSubmitting()"
+    (confirm)="onConfirmModalConfirm()"
+    (cancel)="onConfirmModalCancel()"
+  />
+</div>

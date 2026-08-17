@@ -6,6 +6,7 @@
       "lastName": "Système",
       "email": "admin@dakartech.sn",
       "phone": "+221770000000",
+      "accountNumber": "ACC-0001",
       "role": "ADMIN",
       "status": "ACTIVE",
       "walletBalance": 0,
@@ -18,9 +19,10 @@
       "lastName": "Ndiaye",
       "email": "fatou.ndiaye@example.sn",
       "phone": "+221771111111",
+      "accountNumber": "ACC-0002",
       "role": "CLIENT",
       "status": "ACTIVE",
-      "walletBalance": 65000,
+      "walletBalance": 75794,
       "createdAt": "2026-01-10T10:00:00.000Z",
       "updatedAt": "2026-01-10T10:00:00.000Z"
     },
@@ -30,9 +32,10 @@
       "lastName": "Diop",
       "email": "moussa.diop@example.sn",
       "phone": "+221772222222",
+      "accountNumber": "ACC-0003",
       "role": "CLIENT",
       "status": "ACTIVE",
-      "walletBalance": 65000,
+      "walletBalance": 62500,
       "createdAt": "2026-01-15T10:00:00.000Z",
       "updatedAt": "2026-01-15T10:00:00.000Z"
     },
@@ -42,9 +45,10 @@
       "lastName": "Sarr",
       "email": "awa.sarr@example.sn",
       "phone": "+221773333333",
+      "accountNumber": "ACC-0004",
       "role": "CLIENT",
-      "status": "ACTIVE",
-      "walletBalance": 545000,
+      "status": "SUSPENDED",
+      "walletBalance": 550100,
       "createdAt": "2026-02-01T09:00:00.000Z",
       "updatedAt": "2026-02-01T09:00:00.000Z"
     },
@@ -54,8 +58,9 @@
       "lastName": "Ba",
       "email": "ibrahima.ba@example.sn",
       "phone": "+221774444444",
+      "accountNumber": "ACC-0005",
       "role": "CLIENT",
-      "status": "SUSPENDED",
+      "status": "ACTIVE",
       "walletBalance": 7000,
       "createdAt": "2026-02-10T09:00:00.000Z",
       "updatedAt": "2026-05-15T14:00:00.000Z"
@@ -66,6 +71,7 @@
       "lastName": "Cissé",
       "email": "mariama.cisse@example.sn",
       "phone": "+221775555555",
+      "accountNumber": "ACC-0006",
       "role": "CLIENT",
       "status": "ACTIVE",
       "walletBalance": 940000,
@@ -78,11 +84,12 @@
       "lastName": "Fall",
       "email": "cheikh.fall@example.sn",
       "phone": "+221776666666",
+      "accountNumber": "ACC-0007",
       "role": "CLIENT",
-      "status": "SUSPENDED",
+      "status": "ACTIVE",
       "walletBalance": 9000,
       "createdAt": "2026-03-01T09:00:00.000Z",
-      "updatedAt": "2026-06-10T11:00:00.000Z"
+      "updatedAt": "2026-03-01T09:00:00.000Z"
     }
   ],
   "transactions": [
@@ -295,6 +302,155 @@
       "receiverId": "u2",
       "description": "Virement en cours de traitement",
       "createdAt": "2026-08-10T09:00:00.000Z"
+    },
+    {
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 5000,
+      "senderId": "u2",
+      "receiverId": "u3",
+      "description": "Test virement",
+      "id": "kAph6ZS",
+      "createdAt": "2026-08-15T10:00:00.000Z"
+    },
+    {
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 5000,
+      "senderId": "u3",
+      "receiverId": "u4",
+      "description": "aide",
+      "id": "2uL1M0W",
+      "createdAt": "2026-08-15T13:20:00.000Z"
+    },
+    {
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 100,
+      "senderId": "u3",
+      "receiverId": "u4",
+      "id": "1WnvPVV",
+      "createdAt": "2026-08-15T13:15:00.000Z"
+    },
+    {
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 20000,
+      "receiverId": "u3",
+      "relatedLoanId": "aqYk99n",
+      "description": "Décaissement prêt achat de marchandises",
+      "createdAt": "2026-08-15T18:51:21.493Z",
+      "id": "ERcll_2"
+    },
+    {
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 100,
+      "receiverId": "u3",
+      "relatedLoanId": "ynPhT0n",
+      "description": "Décaissement prêt complete mon compte",
+      "createdAt": "2026-08-15T18:54:53.799Z",
+      "id": "iFNlVNZ"
+    },
+    {
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 2000,
+      "receiverId": "u3",
+      "relatedLoanId": "AGTmlDj",
+      "description": "Décaissement prêt achat de marchandises pour maboutique",
+      "createdAt": "2026-08-17T00:48:58.398Z",
+      "id": "PqcfXk7"
+    },
+    {
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 21000,
+      "senderId": "u3",
+      "relatedLoanId": "aqYk99n",
+      "description": "Remboursement total du prêt aqYk99n",
+      "createdAt": "2026-08-17T01:20:40.067Z",
+      "id": "ogjy1bN"
+    },
+    {
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 106,
+      "senderId": "u3",
+      "relatedLoanId": "ynPhT0n",
+      "description": "Remboursement total du prêt ynPhT0n",
+      "createdAt": "2026-08-17T01:21:29.621Z",
+      "id": "qGOoxKo"
+    },
+    {
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 2100,
+      "senderId": "u3",
+      "relatedLoanId": "AGTmlDj",
+      "description": "Remboursement total du prêt AGTmlDj",
+      "createdAt": "2026-08-17T01:26:27.583Z",
+      "id": "2g72qnX"
+    },
+    {
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 10000,
+      "receiverId": "u3",
+      "relatedLoanId": "TXbIWzE",
+      "description": "Décaissement prêt urgence",
+      "createdAt": "2026-08-17T01:28:52.492Z",
+      "id": "pTBxWO0"
+    },
+    {
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 8794,
+      "senderId": "u3",
+      "receiverId": "u2",
+      "description": "aide a la famille",
+      "createdAt": "2026-08-17T11:55:12.172Z",
+      "id": "IOrDeG_"
+    },
+    {
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 5250,
+      "senderId": "u3",
+      "relatedLoanId": "TXbIWzE",
+      "description": "Remboursement mensualité n°1 - prêt TXbIWzE",
+      "createdAt": "2026-08-17T11:56:02.647Z",
+      "id": "1QMl_Jt"
+    },
+    {
+      "type": "REMBOURSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 5250,
+      "senderId": "u3",
+      "relatedLoanId": "TXbIWzE",
+      "description": "Remboursement total du prêt TXbIWzE",
+      "createdAt": "2026-08-17T11:57:01.823Z",
+      "id": "xvzq0zi"
+    },
+    {
+      "type": "VIREMENT",
+      "status": "REUSSIE",
+      "amount": 2000,
+      "senderId": "u3",
+      "receiverId": "u2",
+      "description": "aide a la famille",
+      "createdAt": "2026-08-17T12:40:15.696Z",
+      "id": "CmcV_ao"
+    },
+    {
+      "type": "DECAISSEMENT_PRET",
+      "status": "REUSSIE",
+      "amount": 15000,
+      "receiverId": "u3",
+      "relatedLoanId": "mzIHWLR",
+      "description": "Décaissement prêt complete mon compte",
+      "createdAt": "2026-08-17T12:41:25.711Z",
+      "id": "jeT6FnL"
     }
   ],
   "loans": [
@@ -383,6 +539,98 @@
       "approvedBy": "u1",
       "startDate": "2026-01-25T10:00:00.000Z",
       "endDate": "2026-02-25T00:00:00.000Z"
+    },
+    {
+      "userId": "u3",
+      "amount": 20000,
+      "interestRate": 5,
+      "durationMonths": 1,
+      "monthlyPayment": 21000,
+      "remainingBalance": 0,
+      "status": "REMBOURSE",
+      "purpose": "achat de marchandises",
+      "requestDate": "2026-08-15T13:42:22.419Z",
+      "id": "aqYk99n",
+      "approvedBy": "u1",
+      "approvalDate": "2026-08-15T18:51:21.461Z",
+      "startDate": "2026-08-15T18:51:21.461Z",
+      "endDate": "2026-08-17T01:20:40.085Z"
+    },
+    {
+      "userId": "u3",
+      "amount": 100,
+      "interestRate": 5,
+      "durationMonths": 2,
+      "monthlyPayment": 53,
+      "remainingBalance": 0,
+      "status": "REMBOURSE",
+      "purpose": "complete mon compte",
+      "requestDate": "2026-08-15T18:53:49.931Z",
+      "id": "ynPhT0n",
+      "approvedBy": "u1",
+      "approvalDate": "2026-08-15T18:54:53.784Z",
+      "startDate": "2026-08-15T18:54:53.784Z",
+      "endDate": "2026-08-17T01:21:29.639Z"
+    },
+    {
+      "userId": "u3",
+      "amount": 2000,
+      "interestRate": 5,
+      "durationMonths": 2,
+      "monthlyPayment": 1050,
+      "remainingBalance": 0,
+      "status": "REMBOURSE",
+      "purpose": "achat de marchandises pour maboutique",
+      "requestDate": "2026-08-17T00:47:44.075Z",
+      "id": "AGTmlDj",
+      "approvedBy": "u1",
+      "approvalDate": "2026-08-17T00:48:58.383Z",
+      "startDate": "2026-08-17T00:48:58.383Z",
+      "endDate": "2026-08-17T01:26:27.600Z"
+    },
+    {
+      "userId": "u3",
+      "amount": 10000,
+      "interestRate": 5,
+      "durationMonths": 2,
+      "monthlyPayment": 5250,
+      "remainingBalance": 0,
+      "status": "REMBOURSE",
+      "purpose": "urgence",
+      "requestDate": "2026-08-17T01:28:00.067Z",
+      "id": "TXbIWzE",
+      "approvedBy": "u1",
+      "approvalDate": "2026-08-17T01:28:52.477Z",
+      "startDate": "2026-08-17T01:28:52.477Z",
+      "endDate": "2026-08-17T11:57:01.834Z"
+    },
+    {
+      "userId": "u3",
+      "amount": 25000,
+      "interestRate": 5,
+      "durationMonths": 3,
+      "monthlyPayment": 8750,
+      "remainingBalance": 26250,
+      "status": "REJETE",
+      "purpose": "voyage affaire",
+      "requestDate": "2026-08-17T11:58:57.589Z",
+      "id": "GxJEG1K",
+      "approvedBy": "u1"
+    },
+    {
+      "userId": "u3",
+      "amount": 15000,
+      "interestRate": 5,
+      "durationMonths": 3,
+      "monthlyPayment": 5250,
+      "remainingBalance": 15750,
+      "status": "EN_COURS",
+      "purpose": "complete mon compte",
+      "requestDate": "2026-08-17T12:40:48.766Z",
+      "id": "mzIHWLR",
+      "approvedBy": "u1",
+      "approvalDate": "2026-08-17T12:41:25.696Z",
+      "startDate": "2026-08-17T12:41:25.696Z"
     }
   ],
   "repayments": [
@@ -496,28 +744,132 @@
       "amountPaid": 156000,
       "paymentDate": "2026-02-20T09:00:00.000Z",
       "status": "PAYE"
+    },
+    {
+      "loanId": "aqYk99n",
+      "userId": "u3",
+      "installmentNumber": 1,
+      "dueDate": "2026-09-15T18:51:21.461Z",
+      "amountDue": 21000,
+      "status": "PAYE",
+      "id": "IpVDd6g",
+      "amountPaid": 21000,
+      "paymentDate": "2026-08-17T01:20:40.085Z"
+    },
+    {
+      "loanId": "ynPhT0n",
+      "userId": "u3",
+      "installmentNumber": 1,
+      "dueDate": "2026-09-15T18:54:53.784Z",
+      "amountDue": 53,
+      "status": "PAYE",
+      "id": "dKtH6Iy",
+      "amountPaid": 53,
+      "paymentDate": "2026-08-17T01:21:29.639Z"
+    },
+    {
+      "loanId": "ynPhT0n",
+      "userId": "u3",
+      "installmentNumber": 2,
+      "dueDate": "2026-10-15T18:54:53.784Z",
+      "amountDue": 53,
+      "status": "PAYE",
+      "id": "Q-leK8F",
+      "amountPaid": 53,
+      "paymentDate": "2026-08-17T01:21:29.639Z"
+    },
+    {
+      "loanId": "AGTmlDj",
+      "userId": "u3",
+      "installmentNumber": 1,
+      "dueDate": "2026-09-17T00:48:58.383Z",
+      "amountDue": 1050,
+      "status": "PAYE",
+      "id": "q4P0bWT",
+      "amountPaid": 1050,
+      "paymentDate": "2026-08-17T01:26:27.600Z"
+    },
+    {
+      "loanId": "AGTmlDj",
+      "userId": "u3",
+      "installmentNumber": 2,
+      "dueDate": "2026-10-17T00:48:58.383Z",
+      "amountDue": 1050,
+      "status": "PAYE",
+      "id": "VedaNV8",
+      "amountPaid": 1050,
+      "paymentDate": "2026-08-17T01:26:27.600Z"
+    },
+    {
+      "loanId": "TXbIWzE",
+      "userId": "u3",
+      "installmentNumber": 1,
+      "dueDate": "2026-09-17T01:28:52.477Z",
+      "amountDue": 5250,
+      "status": "PAYE",
+      "id": "Ig75oc-",
+      "amountPaid": 5250,
+      "paymentDate": "2026-08-17T11:56:02.658Z"
+    },
+    {
+      "loanId": "TXbIWzE",
+      "userId": "u3",
+      "installmentNumber": 2,
+      "dueDate": "2026-10-17T01:28:52.477Z",
+      "amountDue": 5250,
+      "status": "PAYE",
+      "id": "KIcLWSF",
+      "amountPaid": 5250,
+      "paymentDate": "2026-08-17T11:57:01.834Z"
+    },
+    {
+      "loanId": "mzIHWLR",
+      "userId": "u3",
+      "installmentNumber": 1,
+      "dueDate": "2026-09-17T12:41:25.696Z",
+      "amountDue": 5250,
+      "status": "PLANIFIE",
+      "id": "2fCPBON"
+    },
+    {
+      "loanId": "mzIHWLR",
+      "userId": "u3",
+      "installmentNumber": 2,
+      "dueDate": "2026-10-17T12:41:25.696Z",
+      "amountDue": 5250,
+      "status": "PLANIFIE",
+      "id": "k9l6ZW5"
+    },
+    {
+      "loanId": "mzIHWLR",
+      "userId": "u3",
+      "installmentNumber": 3,
+      "dueDate": "2026-11-17T12:41:25.696Z",
+      "amountDue": 5250,
+      "status": "PLANIFIE",
+      "id": "h_T4gPU"
     }
   ],
   "creditScores": [
     {
       "id": "cs1",
       "userId": "u2",
-      "score": 650,
+      "score": 60,
       "category": "BON",
       "totalLoans": 0,
       "onTimeRepayments": 0,
       "lateRepayments": 0,
-      "calculatedAt": "2026-08-01T00:00:00.000Z"
+      "calculatedAt": "2026-08-15T17:25:09.366Z"
     },
     {
       "id": "cs2",
       "userId": "u3",
-      "score": 700,
-      "category": "BON",
-      "totalLoans": 0,
-      "onTimeRepayments": 0,
+      "score": 88,
+      "category": "EXCELLENT",
+      "totalLoans": 5,
+      "onTimeRepayments": 7,
       "lateRepayments": 0,
-      "calculatedAt": "2026-08-01T00:00:00.000Z"
+      "calculatedAt": "2026-08-17T12:41:45.232Z"
     },
     {
       "id": "cs3",

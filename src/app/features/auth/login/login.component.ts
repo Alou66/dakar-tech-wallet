@@ -46,9 +46,10 @@ export class LoginComponent {
         this.loading.set(false);
         this.router.navigateByUrl(spaceUrlForRole(user.role));
       },
-      error: () => {
+      error: (err: unknown) => {
         this.loading.set(false);
-        this.errorMessage.set("Aucun utilisateur trouvé pour cet email.");
+        const message = err instanceof Error ? err.message : 'Aucun utilisateur trouvé pour cet email.';
+        this.errorMessage.set(message);
       },
     });
   }

@@ -1,0 +1,152 @@
+<div class="users-page">
+  <div class="page-header">
+    <h1 class="page-title">Utilisateurs</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Chargement des utilisateurs...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p class="error-message">{{ error() }}</p>
+      <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (!hasUsers()) {
+    <div class="empty-state">
+      <p>Aucun utilisateur enregistré pour le moment.</p>
+    </div>
+  } @else {
+    <div class="filters-bar">
+      <input
+        type="text"
+        class="form-input search-input"
+        placeholder="Rechercher par nom, email ou n° de compte"
+        [value]="searchTerm()"
+        (input)="onSearchChange($event)"
+      />
+
+      <select class="form-input" [value]="roleFilter()" (change)="onRoleFilterChange($event)">
+        <option value="ALL">Tous les rôles</option>
+        <option [value]="UserRole.CLIENT">Client</option>
+        <option [value]="UserRole.ADMIN">Admin</option>
+      </select>
+
+      <select class="form-input" [value]="statusFilter()" (change)="onStatusFilterChange($event)">
+        <option value="ALL">Tous les statuts</option>
+        <option [value]="UserStatus.ACTIVE">Actif</option>
+        <option [value]="UserStatus.SUSPENDED">Suspendu</option>
+      </select>
+
+      <button
+        type="button"
+        class="reset-filters-btn"
+        [disabled]="!hasActiveFilters()"
+        (click)="resetFilters()"
+      >
+        Réinitialiser les filtres
+      </button>
+    </div>
+
+    @if (pendingActionUser(); as pendingUser) {
+      <div class="confirm-banner">
+        <p>
+          @if (pendingAction()?.action === 'suspend') {
+            Suspendre le compte de <strong>{{ pendingUser.firstName }} {{ pendingUser.lastName }}</strong> ?
+          } @else {
+            Réactiver le compte de <strong>{{ pendingUser.firstName }} {{ pendingUser.lastName }}</strong> ?
+          }
+        </p>
+        <div class="confirm-actions">
+          <button type="button" class="confirm-btn" [disabled]="actionSubmitting()" (click)="confirmAction()">
+            @if (actionSubmitting()) {
+              <span>Traitement...</span>
+            } @else {
+              <span>Confirmer</span>
+            }
+          </button>
+          <button type="button" class="cancel-btn" [disabled]="actionSubmitting()" (click)="cancelAction()">
+            Annuler
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (actionError()) {
+      <p class="error-message">{{ actionError() }}</p>
+    }
+
+    @if (!hasFilteredResults()) {
+      <div class="empty-state">
+        <p>Aucun utilisateur ne correspond à ces critères.</p>
+      </div>
+    } @else {
+      <div class="users-table-wrapper">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Email</th>
+              <th>N° de compte</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Solde</th>
+              <th>Score de solvabilité</th>
+              <th>Date de création</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers(); track user.id) {
+              <tr>
+                <td>{{ user.firstName }} {{ user.lastName }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.accountNumber }}</td>
+                <td>{{ roleLabel(user.role) }}</td>
+                <td class="cell-status">
+                  <span class="badge {{ statusClass(user.status) }}">{{ statusLabel(user.status) }}</span>
+                </td>
+                <td class="cell-amount">{{ formatCurrency(user.walletBalance) }}</td>
+                <td class="cell-status">
+                  @if (creditScoreFor(user.id); as score) {
+                    <span class="badge {{ creditScoreCategoryClass(score.category) }}">
+                      {{ score.score }} · {{ creditScoreCategoryLabel(score.category) }}
+                    </span>
+                  } @else {
+                    <span class="no-score">—</span>
+                  }
+                </td>
+                <td class="cell-date">{{ formatDate(user.createdAt) }}</td>
+                <td class="cell-actions">
+                  @if (isClient(user)) {
+                    @if (user.status === UserStatus.ACTIVE) {
+                      <button
+                        type="button"
+                        class="action-btn action-suspend"
+                        [disabled]="actionSubmitting()"
+                        (click)="requestSuspend(user)"
+                      >
+                        Suspendre
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="action-btn action-activate"
+                        [disabled]="actionSubmitting()"
+                        (click)="requestActivate(user)"
+                      >
+                        Réactiver
+                      </button>
+                    }
+                  } @else {
+                    <span class="no-score">—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

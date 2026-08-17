@@ -1,0 +1,107 @@
+<div class="transfers-page">
+  <div class="page-header">
+    <h1 class="page-title">Virements</h1>
+  </div>
+
+  <div class="balance-card">
+    <span class="balance-label">Solde disponible</span>
+    <span class="balance-value">{{ formatBalance(availableBalance()) }} FCFA</span>
+  </div>
+
+  @if (senderSuspended()) {
+    <div class="error-message">Votre compte est suspendu. Vous ne pouvez plus effectuer de virement.</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="transfer-form">
+    <div class="form-group">
+      <label for="accountNumber" class="form-label">Numéro de compte du bénéficiaire</label>
+      <input
+        id="accountNumber"
+        type="text"
+        formControlName="accountNumber"
+        class="form-input"
+        placeholder="Ex: ACC-0003"
+        [class.input-error]="form.get('accountNumber')?.invalid && form.get('accountNumber')?.touched"
+      />
+      @if (beneficiaryLookup()) {
+        <span class="field-hint">Recherche en cours...</span>
+      }
+      @if (beneficiary()) {
+        <span class="field-success">Bénéficiaire : {{ beneficiary()!.firstName }} {{ beneficiary()!.lastName }}</span>
+      }
+      @if (beneficiaryError()) {
+        <span class="field-error">{{ beneficiaryError() }}</span>
+      }
+      @if (beneficiary() && beneficiary()!.id === currentUser()?.id) {
+        <span class="field-error">Vous ne pouvez pas virer vers votre propre compte.</span>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="amount" class="form-label">Montant (FCFA)</label>
+      <input
+        id="amount"
+        type="number"
+        formControlName="amount"
+        class="form-input"
+        placeholder="0"
+        min="1"
+        step="1"
+        [class.input-error]="form.get('amount')?.invalid && form.get('amount')?.touched"
+      />
+      @if (form.get('amount')?.hasError('required') && form.get('amount')?.touched) {
+        <span class="field-error">Le montant est obligatoire.</span>
+      }
+      @if (form.get('amount')?.hasError('min') && form.get('amount')?.touched) {
+        <span class="field-error">Le montant doit être supérieur à 0.</span>
+      }
+      @if (form.get('amount')?.value && form.get('amount')?.value > availableBalance()) {
+        <span class="field-error">Solde insuffisant.</span>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="description" class="form-label">Motif / Description (facultatif)</label>
+      <input
+        id="description"
+        type="text"
+        formControlName="description"
+        class="form-input"
+        placeholder="Ex: Remboursement dette personnelle"
+      />
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="submit"
+        class="submit-btn"
+        [disabled]="canSubmit() === false"
+      >
+        @if (submitting()) {
+          <span>Transfert en cours...</span>
+        } @else {
+          <span>Effectuer le virement</span>
+        }
+      </button>
+    </div>
+
+    @if (successMessage()) {
+      <div class="success-message">{{ successMessage() }}</div>
+    }
+    @if (errorMessage()) {
+      <div class="error-message">{{ errorMessage() }}</div>
+    }
+  </form>
+
+  <app-confirmation-modal
+    [open]="showConfirmModal()"
+    title="Confirmer le virement"
+    message="Vérifiez les informations avant d'effectuer ce virement."
+    [details]="confirmModalDetails()"
+    confirmLabel="Effectuer le virement"
+    cancelLabel="Annuler"
+    [loading]="submitting()"
+    (confirm)="onConfirmModalConfirm()"
+    (cancel)="onConfirmModalCancel()"
+  />
+</div>

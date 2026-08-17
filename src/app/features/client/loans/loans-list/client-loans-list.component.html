@@ -1,0 +1,95 @@
+<div class="loans-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Mes prêts</h1>
+      <p class="page-subtitle">Suivez vos demandes et vos prêts en cours.</p>
+    </div>
+    @if (!accountSuspended()) {
+      <a routerLink="/client/loans/new" class="primary-btn">Demander un prêt</a>
+    }
+  </div>
+
+  @if (accountSuspended()) {
+    <div class="error-message">
+      Votre compte est suspendu. Vous ne pouvez plus demander de prêt ni effectuer de remboursement.
+    </div>
+  }
+
+  <section class="score-card">
+    <div class="score-main {{ creditScoreCategoryClass(creditScoreBreakdown().category) }}">
+      <span class="score-label">Score de solvabilité</span>
+      <div class="score-value-row">
+        <span class="score-value">{{ creditScoreBreakdown().score }}</span>
+        <span class="badge {{ creditScoreCategoryClass(creditScoreBreakdown().category) }}">
+          {{ creditScoreCategoryLabel(creditScoreBreakdown().category) }}
+        </span>
+      </div>
+    </div>
+    <div class="score-stats">
+      <div class="score-stat">
+        <span class="score-stat-value">{{ creditScoreBreakdown().onTimeCount }}</span>
+        <span class="score-stat-label">Paiements à temps</span>
+      </div>
+      <div class="score-stat">
+        <span class="score-stat-value">{{ creditScoreBreakdown().lateCount }}</span>
+        <span class="score-stat-label">Retards</span>
+      </div>
+    </div>
+  </section>
+
+  @if (creditScoreError()) {
+    <p class="error-message">{{ creditScoreError() }}</p>
+  }
+
+  <section class="list-section">
+    @if (loading()) {
+      <div class="loading-state">
+        <p>Chargement de vos prêts...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-state">
+        <p class="error-message">{{ error() }}</p>
+        <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+      </div>
+    } @else if (sortedLoans().length === 0) {
+      <div class="empty-state">
+        <p>Vous n'avez encore aucune demande de prêt.</p>
+        @if (!accountSuspended()) {
+          <a routerLink="/client/loans/new" class="primary-btn">Demander mon premier prêt</a>
+        }
+      </div>
+    } @else {
+      <div class="loan-cards">
+        @for (loan of sortedLoans(); track loan.id) {
+          <a [routerLink]="['/client/loans', loan.id]" class="loan-card" [class.loan-card-late]="loan.status === 'EN_RETARD'">
+            <div class="loan-card-top">
+              <span class="loan-amount">{{ formatCurrency(loan.amount) }}</span>
+              <span class="badge {{ loanStatusClass(loan.status) }}">{{ loanStatusLabel(loan.status) }}</span>
+            </div>
+
+            @if (loan.purpose) {
+              <p class="loan-purpose">{{ loan.purpose }}</p>
+            }
+
+            <div class="loan-card-details">
+              <div class="loan-detail">
+                <span class="loan-detail-label">Capital restant dû</span>
+                <span class="loan-detail-value">{{ formatCurrency(loan.remainingBalance) }}</span>
+              </div>
+              <div class="loan-detail">
+                <span class="loan-detail-label">Durée</span>
+                <span class="loan-detail-value">{{ loan.durationMonths }} mois</span>
+              </div>
+              <div class="loan-detail">
+                <span class="loan-detail-label">Date de demande</span>
+                <span class="loan-detail-value">{{ formatDate(loan.requestDate) }}</span>
+              </div>
+            </div>
+
+            <span class="loan-card-cta">Voir le détail →</span>
+          </a>
+        }
+      </div>
+    }
+  </section>
+</div>

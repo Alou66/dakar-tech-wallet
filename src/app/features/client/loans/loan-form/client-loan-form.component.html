@@ -1,0 +1,134 @@
+<div class="loan-form-page">
+  <div class="page-header">
+    <a routerLink="/client/loans" class="back-link">← Mes prêts</a>
+    <h1 class="page-title">Nouvelle demande de prêt</h1>
+  </div>
+
+  @if (successMessage()) {
+    <div class="success-panel">
+      <p class="success-message">{{ successMessage() }}</p>
+      <a routerLink="/client/loans" class="primary-btn">Retour à mes prêts</a>
+    </div>
+  } @else {
+    @if (checkingEligibility()) {
+      <div class="field-hint">Vérification de votre éligibilité...</div>
+    }
+    @if (eligibilityErrorMessage()) {
+      <div class="error-message">{{ eligibilityErrorMessage() }}</div>
+    }
+
+    <div class="form-layout">
+      <form [formGroup]="form" (ngSubmit)="submit()" class="loan-form">
+        <div class="form-group">
+          <label for="amount" class="form-label">Montant souhaité (FCFA)</label>
+          <input
+            id="amount"
+            type="number"
+            formControlName="amount"
+            class="form-input"
+            placeholder="Ex: 100000"
+            min="1"
+            step="1"
+            [class.input-error]="form.get('amount')?.invalid && form.get('amount')?.touched"
+          />
+          @if (form.get('amount')?.hasError('required') && form.get('amount')?.touched) {
+            <span class="field-error">Le montant est obligatoire.</span>
+          }
+          @if (form.get('amount')?.hasError('min') && form.get('amount')?.touched) {
+            <span class="field-error">Le montant doit être strictement positif.</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="purpose" class="form-label">Motif</label>
+          <input
+            id="purpose"
+            type="text"
+            formControlName="purpose"
+            class="form-input"
+            placeholder="Ex: Achat matériel informatique"
+            [class.input-error]="form.get('purpose')?.invalid && form.get('purpose')?.touched"
+          />
+          @if (form.get('purpose')?.hasError('required') && form.get('purpose')?.touched) {
+            <span class="field-error">Le motif est obligatoire.</span>
+          }
+          @if (form.get('purpose')?.hasError('minlength') && form.get('purpose')?.touched) {
+            <span class="field-error">Le motif doit contenir au moins 3 caractères.</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="durationMonths" class="form-label">Durée de remboursement (mois)</label>
+          <input
+            id="durationMonths"
+            type="number"
+            formControlName="durationMonths"
+            class="form-input"
+            placeholder="Ex: 6"
+            min="1"
+            max="60"
+            step="1"
+            [class.input-error]="form.get('durationMonths')?.invalid && form.get('durationMonths')?.touched"
+          />
+          @if (form.get('durationMonths')?.hasError('required') && form.get('durationMonths')?.touched) {
+            <span class="field-error">La durée est obligatoire.</span>
+          }
+          @if (form.get('durationMonths')?.hasError('min') && form.get('durationMonths')?.touched) {
+            <span class="field-error">La durée doit être d'au moins 1 mois.</span>
+          }
+          @if (form.get('durationMonths')?.hasError('max') && form.get('durationMonths')?.touched) {
+            <span class="field-error">La durée ne peut pas dépasser 60 mois.</span>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-btn" [disabled]="canSubmit() === false">
+            @if (submitting()) {
+              <span>Envoi en cours...</span>
+            } @else if (checkingEligibility()) {
+              <span>Vérification...</span>
+            } @else {
+              <span>Envoyer la demande</span>
+            }
+          </button>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="error-message">{{ errorMessage() }}</div>
+        }
+      </form>
+
+      <aside class="simulation-card">
+        <h2 class="simulation-title">Simulation</h2>
+        @if (simulation(); as sim) {
+          <div class="simulation-row">
+            <span class="simulation-label">Taux d'intérêt</span>
+            <span class="simulation-value">{{ interestRate }} %</span>
+          </div>
+          <div class="simulation-row">
+            <span class="simulation-label">Mensualité estimée</span>
+            <span class="simulation-value simulation-highlight">{{ formatCurrency(sim.monthlyPayment) }}</span>
+          </div>
+          <div class="simulation-row">
+            <span class="simulation-label">Total à rembourser</span>
+            <span class="simulation-value">{{ formatCurrency(sim.totalDue) }}</span>
+          </div>
+        } @else {
+          <p class="simulation-hint">Renseignez un montant et une durée pour estimer votre mensualité.</p>
+        }
+      </aside>
+    </div>
+  }
+
+  <app-confirmation-modal
+    [open]="showConfirmModal()"
+    title="Confirmer la demande de prêt"
+    message="Vérifiez les informations avant d'envoyer votre demande."
+    [details]="confirmModalDetails()"
+    confirmLabel="Envoyer la demande"
+    cancelLabel="Annuler"
+    [loading]="submitting()"
+    (confirm)="onConfirmModalConfirm()"
+    (cancel)="onConfirmModalCancel()"
+  />
+</div>

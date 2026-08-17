@@ -1,0 +1,17 @@
+.placeholder-page {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.placeholder-page h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 0.5rem;
+}
+
+.placeholder-page p {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0;
+}

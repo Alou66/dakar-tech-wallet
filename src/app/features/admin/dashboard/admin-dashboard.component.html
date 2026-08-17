@@ -1,0 +1,96 @@
+<div class="dashboard">
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Chargement du tableau de bord...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p class="error-message">{{ error() }}</p>
+      <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (!hasData()) {
+    <div class="empty-state">
+      <p>Aucune donnée disponible pour le moment.</p>
+    </div>
+  } @else {
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-users">
+        <span class="kpi-label">Utilisateurs totaux</span>
+        <span class="kpi-value">{{ formatNumber(stats()!.totalUsers) }}</span>
+      </div>
+
+      <div class="kpi-card kpi-active">
+        <span class="kpi-label">Utilisateurs actifs</span>
+        <span class="kpi-value">{{ formatNumber(stats()!.activeUsers) }}</span>
+      </div>
+
+      <div class="kpi-card kpi-suspended">
+        <span class="kpi-label">Utilisateurs suspendus</span>
+        <span class="kpi-value">{{ formatNumber(stats()!.suspendedUsers) }}</span>
+      </div>
+
+      <div class="kpi-card kpi-volume">
+        <span class="kpi-label">Volume financier total</span>
+        <span class="kpi-value">{{ formatCurrency(stats()!.financialVolume) }}</span>
+      </div>
+
+      <div class="kpi-card kpi-transactions">
+        <span class="kpi-label">Transactions réussies</span>
+        <span class="kpi-value">{{ formatNumber(stats()!.successfulTransactionsCount) }}</span>
+      </div>
+
+      <div class="kpi-card kpi-granted">
+        <span class="kpi-label">Montant total des prêts accordés</span>
+        <span class="kpi-value">{{ formatCurrency(stats()!.grantedLoansAmount) }}</span>
+      </div>
+    </div>
+
+    <div class="loans-section">
+      <h2 class="section-title">Prêts</h2>
+
+      <div class="loan-stats-grid">
+        <div class="loan-stat-card">
+          <span class="loan-stat-value">{{ formatNumber(stats()!.totalLoans) }}</span>
+          <span class="loan-stat-label">Total des prêts</span>
+        </div>
+
+        <div class="loan-stat-card loan-stat-pending" [class.is-alert]="stats()!.pendingLoans > 0">
+          <span class="loan-stat-value">{{ formatNumber(stats()!.pendingLoans) }}</span>
+          <span class="loan-stat-label">En attente</span>
+        </div>
+
+        <div class="loan-stat-card loan-stat-ongoing">
+          <span class="loan-stat-value">{{ formatNumber(stats()!.ongoingLoans) }}</span>
+          <span class="loan-stat-label">En cours</span>
+        </div>
+
+        <div class="loan-stat-card loan-stat-late" [class.is-alert]="stats()!.lateLoans > 0">
+          <span class="loan-stat-value">{{ formatNumber(stats()!.lateLoans) }}</span>
+          <span class="loan-stat-label">En retard</span>
+        </div>
+
+        <div class="loan-stat-card loan-stat-repaid">
+          <span class="loan-stat-value">{{ formatNumber(stats()!.repaidLoans) }}</span>
+          <span class="loan-stat-label">Remboursés</span>
+        </div>
+      </div>
+
+      @if (stats()!.pendingLoans > 0 || stats()!.lateLoans > 0) {
+        <div class="alert-banners">
+          @if (stats()!.pendingLoans > 0) {
+            <div class="alert-banner alert-warning">
+              <span class="alert-dot"></span>
+              {{ formatNumber(stats()!.pendingLoans) }} demande(s) de prêt en attente de traitement.
+            </div>
+          }
+          @if (stats()!.lateLoans > 0) {
+            <div class="alert-banner alert-danger">
+              <span class="alert-dot"></span>
+              {{ formatNumber(stats()!.lateLoans) }} prêt(s) en retard de remboursement.
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

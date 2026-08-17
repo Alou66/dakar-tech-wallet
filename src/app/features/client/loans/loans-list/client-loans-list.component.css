@@ -1,0 +1,57 @@
+.loans-page{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem}
+.page-header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:1rem}
+.page-title{font-size:1.5rem;font-weight:700;color:#0f172a;margin:0}
+.page-subtitle{font-size:.9375rem;color:#64748b;margin:.25rem 0 0}
+.primary-btn{padding:.625rem 1.25rem;background:#3b82f6;color:#fff;border:none;border-radius:.375rem;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-block}
+.primary-btn:hover{background:#2563eb}
+.error-message{padding:.75rem 1rem;background:#fee2e2;color:#991b1b;border-radius:.375rem;font-size:.9375rem}
+
+.score-card{display:flex;flex-wrap:wrap;align-items:center;gap:2rem;background:#fff;border:1px solid #e2e8f0;border-radius:.5rem;padding:1.25rem 1.5rem}
+.score-main{display:flex;flex-direction:column;gap:.5rem;border-left:4px solid #94a3b8;padding-left:1rem}
+.score-label{font-size:.8125rem;color:#64748b;font-weight:500}
+.score-value-row{display:flex;align-items:center;gap:.75rem}
+.score-value{font-size:1.75rem;font-weight:700;color:#0f172a;line-height:1}
+.score-stats{display:flex;gap:1.5rem}
+.score-stat{display:flex;flex-direction:column;align-items:center}
+.score-stat-value{font-size:1.125rem;font-weight:700;color:#0f172a}
+.score-stat-label{font-size:.75rem;color:#64748b}
+.score-excellent{border-left-color:#10b981}
+.score-good{border-left-color:#3b82f6}
+.score-warning{border-left-color:#f59e0b}
+.score-danger{border-left-color:#ef4444}
+
+.badge{align-self:flex-start;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.badge-success{background:#d1fae5;color:#065f46}
+.badge-danger{background:#fee2e2;color:#991b1b}
+.badge-neutral{background:#f1f5f9;color:#475569}
+.badge-pending{background:#fef3c7;color:#92400e}
+.badge-approved{background:#dbeafe;color:#1e40af}
+.badge-active{background:#e0e7ff;color:#3730a3}
+.badge.score-excellent{background:#d1fae5;color:#065f46}
+.badge.score-good{background:#dbeafe;color:#1e40af}
+.badge.score-warning{background:#fef3c7;color:#92400e}
+.badge.score-danger{background:#fee2e2;color:#991b1b}
+
+.loading-state,.error-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:1rem;color:#64748b}
+.retry-btn{padding:.5rem 1.25rem;background:#3b82f6;color:#fff;border:none;border-radius:.375rem;cursor:pointer;font-weight:500}
+.retry-btn:hover{background:#2563eb}
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:1rem;color:#64748b;font-size:.9375rem;text-align:center;padding:3rem 1.5rem;background:#fff;border:1px solid #e2e8f0;border-radius:.5rem}
+
+.loan-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.loan-card{display:flex;flex-direction:column;gap:.75rem;background:#fff;border:1px solid #e2e8f0;border-radius:.5rem;padding:1.25rem;text-decoration:none;color:inherit;transition:box-shadow .15s ease,border-color .15s ease}
+.loan-card:hover{box-shadow:0 2px 8px rgba(15,23,42,.08);border-color:#cbd5e1}
+.loan-card-late{border-left:4px solid #ef4444}
+.loan-card-top{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.loan-amount{font-size:1.25rem;font-weight:700;color:#0f172a}
+.loan-purpose{margin:0;font-size:.875rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.loan-card-details{display:flex;flex-direction:column;gap:.5rem;padding-top:.5rem;border-top:1px solid #f1f5f9}
+.loan-detail{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.loan-detail-label{font-size:.8125rem;color:#64748b}
+.loan-detail-value{font-size:.875rem;font-weight:600;color:#1e293b}
+.loan-card-cta{margin-top:.25rem;font-size:.8125rem;font-weight:600;color:#3b82f6}
+
+@media(max-width:640px){
+  .page-header{flex-direction:column;align-items:stretch}
+  .primary-btn{text-align:center}
+  .score-card{flex-direction:column;align-items:flex-start;gap:1rem}
+}
