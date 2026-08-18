@@ -163,9 +163,10 @@ describe('ClientLoanFormComponent', () => {
     component.onConfirmModalConfirm();
 
     const req = httpMock.expectOne((r) => r.method === 'POST' && r.url === `${API}/loans`);
-    expect(req.request.body.userId).toBe(currentUser!.id);
     expect(req.request.body.amount).toBe(100000);
-    req.flush({ id: 'loan99', ...req.request.body });
+    expect(req.request.body.purpose).toBe('Achat matériel');
+    expect(req.request.body.durationMonths).toBe(6);
+    req.flush({ id: 'loan99', userId: currentUser!.id, ...req.request.body, status: 'EN_ATTENTE' });
 
     expect(component.successMessage()).toBe('Votre demande de prêt a été envoyée avec succès.');
     expect(component.showConfirmModal()).toBe(false);

@@ -136,18 +136,9 @@
                 </p>
               }
 
-              @if (checkingRepayment()) {
-                <span class="field-hint">Vérification en cours...</span>
-              }
-              @if (repaymentCheckErrorMessage()) {
-                <span class="field-error">{{ repaymentCheckErrorMessage() }}</span>
-              }
-
               <button type="submit" class="primary-btn" [disabled]="canPayInstallment() === false">
                 @if (repaymentSubmitting()) {
                   <span>Paiement en cours...</span>
-                } @else if (checkingRepayment()) {
-                  <span>Vérification...</span>
                 } @else {
                   <span>Payer cette mensualité</span>
                 }

@@ -56,13 +56,9 @@
             Valider la demande de prêt de <strong>{{ userLabel(pendingLoan.userId) }}</strong>
             pour <strong>{{ formatCurrency(pendingLoan.amount) }}</strong> ?
             Le montant sera automatiquement crédité sur son portefeuille.
-          } @else if (pendingAction()?.action === 'reject') {
+          } @else {
             Rejeter la demande de prêt de <strong>{{ userLabel(pendingLoan.userId) }}</strong>
             pour <strong>{{ formatCurrency(pendingLoan.amount) }}</strong> ?
-          } @else {
-            Reprendre la génération de l'échéancier du prêt de <strong>{{ userLabel(pendingLoan.userId) }}</strong>
-            pour <strong>{{ formatCurrency(pendingLoan.amount) }}</strong> ?
-            Le portefeuille du client ne sera pas recrédité : le décaissement a déjà eu lieu.
           }
         </p>
         <div class="confirm-actions">
@@ -155,15 +151,6 @@
                       (click)="requestReject(loan)"
                     >
                       Rejeter
-                    </button>
-                  } @else if (canResumeSchedule(loan)) {
-                    <button
-                      type="button"
-                      class="action-btn action-approve"
-                      [disabled]="actionSubmitting()"
-                      (click)="requestResumeSchedule(loan)"
-                    >
-                      Générer l'échéancier
                     </button>
                   } @else {
                     <span class="no-value">—</span>

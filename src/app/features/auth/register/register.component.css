@@ -1,4 +1,4 @@
-.login-page {
+.register-page {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -6,7 +6,7 @@
   padding: 1rem;
 }
 
-.login-card {
+.register-card {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

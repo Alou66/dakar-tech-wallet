@@ -64,7 +64,7 @@ describe('ClientTransfersComponent - compte suspendu', () => {
 
     component.submit();
 
-    httpMock.expectNone(`${API}/transactions`);
+    httpMock.expectNone(`${API}/transactions/transfer`);
   });
 
   it('autorise un client actif à effectuer un virement (formulaire non bloqué)', () => {
@@ -81,7 +81,8 @@ describe('ClientTransfersComponent - confirmation du virement', () => {
 
   function fillValidTransfer(component: ClientTransfersComponent, httpMock: HttpTestingController, beneficiary: User) {
     component.form.patchValue({ accountNumber: beneficiary.accountNumber, amount: 10000 });
-    httpMock.expectOne((req) => req.url === `${API}/users` && req.params.get('accountNumber') === beneficiary.accountNumber)
+    httpMock
+      .expectOne((req) => req.url === `${API}/users/search` && req.params.get('accountNumber') === beneficiary.accountNumber)
       .flush([beneficiary]);
   }
 
@@ -93,14 +94,14 @@ describe('ClientTransfersComponent - confirmation du virement', () => {
     component.submit();
 
     expect(component.showConfirmModal()).toBe(true);
-    httpMock.expectNone(`${API}/transactions`);
+    httpMock.expectNone(`${API}/transactions/transfer`);
 
     component.onConfirmModalCancel();
     expect(component.showConfirmModal()).toBe(false);
-    httpMock.expectNone(`${API}/transactions`);
+    httpMock.expectNone(`${API}/transactions/transfer`);
   });
 
-  it('effectue le virement une fois la confirmation validée', () => {
+  it('effectue le virement en un seul appel atomique une fois la confirmation validée', () => {
     const { component, httpMock, user } = setup({ status: UserStatus.ACTIVE });
     const beneficiary = makeUser({ id: 'u2', accountNumber: 'ACC-0002', walletBalance: 5000 });
     fillValidTransfer(component, httpMock, beneficiary);
@@ -108,17 +109,43 @@ describe('ClientTransfersComponent - confirmation du virement', () => {
     component.submit();
     component.onConfirmModalConfirm();
 
-    httpMock.expectOne(`${API}/users/${user.id}`).flush(user);
-    httpMock.expectOne(`${API}/users/${beneficiary.id}`).flush(beneficiary);
+    const txReq = httpMock.expectOne(`${API}/transactions/transfer`);
+    expect(txReq.request.method).toBe('POST');
+    expect(txReq.request.body).toEqual({
+      beneficiaryAccountNumber: beneficiary.accountNumber,
+      amount: 10000,
+      description: undefined,
+    });
+    txReq.flush({
+      id: 'tx1',
+      type: 'VIREMENT',
+      status: 'REUSSIE',
+      amount: 10000,
+      senderId: user.id,
+      receiverId: beneficiary.id,
+      createdAt: '2026-08-17T00:00:00.000Z',
+    });
 
-    const txReq = httpMock.expectOne(`${API}/transactions`);
-    expect(txReq.request.body.amount).toBe(10000);
-    txReq.flush({ id: 'tx1', ...txReq.request.body });
-
+    // Rafraîchit le solde de l'expéditeur après un virement réussi.
     httpMock.expectOne(`${API}/users/${user.id}`).flush({ ...user, walletBalance: 90000 });
-    httpMock.expectOne(`${API}/users/${beneficiary.id}`).flush({ ...beneficiary, walletBalance: 15000 });
 
     expect(component.successMessage()).toBe('Virement effectué avec succès.');
+    expect(component.showConfirmModal()).toBe(false);
+  });
+
+  it('affiche le message renvoyé par le serveur en cas d’échec (ex: solde insuffisant)', () => {
+    const { component, httpMock } = setup({ status: UserStatus.ACTIVE });
+    const beneficiary = makeUser({ id: 'u2', accountNumber: 'ACC-0002' });
+    fillValidTransfer(component, httpMock, beneficiary);
+
+    component.submit();
+    component.onConfirmModalConfirm();
+
+    httpMock
+      .expectOne(`${API}/transactions/transfer`)
+      .flush({ message: 'Solde insuffisant pour effectuer ce virement.' }, { status: 409, statusText: 'Conflict' });
+
+    expect(component.errorMessage()).toBe('Solde insuffisant pour effectuer ce virement.');
     expect(component.showConfirmModal()).toBe(false);
   });
 });

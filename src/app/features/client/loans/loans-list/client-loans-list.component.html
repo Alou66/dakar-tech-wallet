@@ -15,30 +15,28 @@
     </div>
   }
 
-  <section class="score-card">
-    <div class="score-main {{ creditScoreCategoryClass(creditScoreBreakdown().category) }}">
-      <span class="score-label">Score de solvabilité</span>
-      <div class="score-value-row">
-        <span class="score-value">{{ creditScoreBreakdown().score }}</span>
-        <span class="badge {{ creditScoreCategoryClass(creditScoreBreakdown().category) }}">
-          {{ creditScoreCategoryLabel(creditScoreBreakdown().category) }}
-        </span>
+  @if (creditScore(); as score) {
+    <section class="score-card">
+      <div class="score-main {{ creditScoreCategoryClass(score.category) }}">
+        <span class="score-label">Score de solvabilité</span>
+        <div class="score-value-row">
+          <span class="score-value">{{ score.score }}</span>
+          <span class="badge {{ creditScoreCategoryClass(score.category) }}">
+            {{ creditScoreCategoryLabel(score.category) }}
+          </span>
+        </div>
       </div>
-    </div>
-    <div class="score-stats">
-      <div class="score-stat">
-        <span class="score-stat-value">{{ creditScoreBreakdown().onTimeCount }}</span>
-        <span class="score-stat-label">Paiements à temps</span>
+      <div class="score-stats">
+        <div class="score-stat">
+          <span class="score-stat-value">{{ score.onTimeRepayments }}</span>
+          <span class="score-stat-label">Paiements à temps</span>
+        </div>
+        <div class="score-stat">
+          <span class="score-stat-value">{{ score.lateRepayments }}</span>
+          <span class="score-stat-label">Retards</span>
+        </div>
       </div>
-      <div class="score-stat">
-        <span class="score-stat-value">{{ creditScoreBreakdown().lateCount }}</span>
-        <span class="score-stat-label">Retards</span>
-      </div>
-    </div>
-  </section>
-
-  @if (creditScoreError()) {
-    <p class="error-message">{{ creditScoreError() }}</p>
+    </section>
   }
 
   <section class="list-section">

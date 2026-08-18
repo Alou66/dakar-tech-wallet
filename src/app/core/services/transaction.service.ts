@@ -1,6 +1,6 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { Transaction } from '../models/transaction.model';
@@ -19,38 +19,22 @@ export class TransactionService {
   }
 
   getByLoan(loanId: string): Observable<Transaction[]> {
-    const params = new HttpParams().set('relatedLoanId', loanId);
-    return this.http.get<Transaction[]>(this.resourceUrl, { params });
+    return this.http.get<Transaction[]>(`${this.resourceUrl}/loan/${loanId}`);
   }
 
   getByUser(userId: string): Observable<Transaction[]> {
-    const asSender = this.http.get<Transaction[]>(this.resourceUrl, {
-      params: new HttpParams().set('senderId', userId),
-    });
-    const asReceiver = this.http.get<Transaction[]>(this.resourceUrl, {
-      params: new HttpParams().set('receiverId', userId),
-    });
-
-    return forkJoin([asSender, asReceiver]).pipe(
-      map(([sent, received]) => {
-        const byId = new Map<string, Transaction>();
-        [...sent, ...received].forEach((transaction) => byId.set(transaction.id, transaction));
-        return Array.from(byId.values()).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-      }),
-    );
+    return this.http.get<Transaction[]>(`${this.resourceUrl}/user/${userId}`);
   }
 
-  create(transaction: Omit<Transaction, 'id' | 'createdAt'>): Observable<Transaction> {
-    const payload: Omit<Transaction, 'id'> = {
-      ...transaction,
-      createdAt: new Date().toISOString(),
-    };
-    return this.http.post<Transaction>(this.resourceUrl, payload);
-  }
-
-  update(id: string, changes: Partial<Transaction>): Observable<Transaction> {
-    return this.http.patch<Transaction>(`${this.resourceUrl}/${id}`, changes);
+  /**
+   * Virement débité/crédité de façon atomique côté serveur : l'expéditeur
+   * est déduit du token JWT, jamais transmis par le client.
+   */
+  transfer(beneficiaryAccountNumber: string, amount: number, description?: string): Observable<Transaction> {
+    return this.http.post<Transaction>(`${this.resourceUrl}/transfer`, {
+      beneficiaryAccountNumber,
+      amount,
+      description: description || undefined,
+    });
   }
 }

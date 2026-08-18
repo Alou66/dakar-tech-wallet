@@ -1,22 +1,31 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, map, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { User, UserStatus } from '../models/user.model';
+import { User } from '../models/user.model';
 
 const CURRENT_USER_STORAGE_KEY = 'dakar-tech-wallet.currentUser';
+const TOKEN_STORAGE_KEY = 'dakar-tech-wallet.token';
 
-/**
- * Authentification temporaire adossée à JSON Server : les utilisateurs sont
- * recherchés par email, sans mot de passe ni jeton. À remplacer par un vrai
- * mécanisme (JWT, session serveur, ...) lors de la migration vers Spring Boot.
- */
+interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly resourceUrl = `${environment.apiUrl}/users`;
+  private readonly resourceUrl = `${environment.apiUrl}/auth`;
 
   private readonly currentUserSignal = signal<User | null>(this.readStoredUser());
 
@@ -26,25 +35,23 @@ export class AuthService {
   /** Conservé pour les consommateurs RxJS existants. */
   readonly currentUser$: Observable<User | null> = toObservable(this.currentUserSignal);
 
-  login(email: string): Observable<User> {
-    const params = new HttpParams().set('email', email);
-    return this.http.get<User[]>(this.resourceUrl, { params }).pipe(
-      map((users) => {
-        const user = users[0];
-        if (!user) {
-          throw new Error('Aucun utilisateur trouvé pour cet email.');
-        }
-        if (user.status === UserStatus.SUSPENDED) {
-          throw new Error('Votre compte a été suspendu. Contactez un administrateur.');
-        }
-        return user;
-      }),
-      tap((user) => this.setCurrentUser(user)),
+  login(email: string, password: string): Observable<User> {
+    return this.http.post<LoginResponse>(`${this.resourceUrl}/login`, { email, password }).pipe(
+      tap(({ token, user }) => this.setSession(token, user)),
+      map(({ user }) => user),
+    );
+  }
+
+  register(request: RegisterRequest): Observable<User> {
+    return this.http.post<LoginResponse>(`${this.resourceUrl}/register`, request).pipe(
+      tap(({ token, user }) => this.setSession(token, user)),
+      map(({ user }) => user),
     );
   }
 
   logout(): void {
     localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     this.currentUserSignal.set(null);
   }
 
@@ -52,11 +59,22 @@ export class AuthService {
     return this.currentUserSignal();
   }
 
+  /** Rafraîchit la session avec les données utilisateur à jour (ex : après modification du profil). */
+  updateCurrentUser(user: User): void {
+    localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
+    this.currentUserSignal.set(user);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  }
+
   isAuthenticated(): boolean {
     return this.currentUserSignal() !== null;
   }
 
-  private setCurrentUser(user: User): void {
+  private setSession(token: string, user: User): void {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
     localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
     this.currentUserSignal.set(user);
   }

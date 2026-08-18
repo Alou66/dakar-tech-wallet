@@ -1,26 +1,18 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import {
-  AbstractControl,
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators,
-} from '@angular/forms';
-import { Observable, catchError, forkJoin, map, of } from 'rxjs';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { LoanService } from '../../../../core/services/loan.service';
 import { RepaymentService } from '../../../../core/services/repayment.service';
-import { TransactionService } from '../../../../core/services/transaction.service';
 import { UserService } from '../../../../core/services/user.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { Loan, LoanStatus } from '../../../../core/models/loan.model';
+import { Loan } from '../../../../core/models/loan.model';
 import { UserStatus } from '../../../../core/models/user.model';
 import { Repayment, RepaymentStatus } from '../../../../core/models/repayment.model';
-import { Transaction, TransactionStatus, TransactionType } from '../../../../core/models/transaction.model';
 import {
   daysLateForRepayment,
   formatCurrency,
@@ -32,7 +24,6 @@ import {
   repaymentStatusClass,
   repaymentStatusLabel,
 } from '../../../../core/utils/loan-display.util';
-import { deriveLoanStatus } from '../../../../core/utils/loan-status.util';
 import {
   ConfirmationDetail,
   ConfirmationModalComponent,
@@ -52,7 +43,6 @@ export class ClientLoanDetailComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly loanService = inject(LoanService);
   private readonly repaymentService = inject(RepaymentService);
-  private readonly transactionService = inject(TransactionService);
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
 
@@ -79,50 +69,12 @@ export class ClientLoanDetailComponent implements OnInit {
     ),
   );
 
-  /**
-   * `repaymentId` porte à la fois la validation synchrone (une échéance doit
-   * être sélectionnée) et la validation asynchrone : dès qu'une échéance est
-   * choisie, on revérifie côté serveur (via `LoanService`, `RepaymentService`
-   * et `UserService`) que le prêt appartient bien au client, qu'il est
-   * réellement remboursable, que l'échéance est encore payable et que le
-   * solde du portefeuille suffit. Ce contrôle asynchrone donne un retour
-   * immédiat dans le formulaire ; la relecture fraîche juste avant le débit
-   * dans `payInstallment()` reste l'ultime garde-fou (protection contre les
-   * conditions de course, non dupliquée ici).
-   */
   readonly repaymentForm: FormGroup = this.fb.group({
-    repaymentId: [
-      '',
-      {
-        validators: [Validators.required],
-        asyncValidators: [this.repaymentAsyncValidator.bind(this)],
-      },
-    ],
+    repaymentId: ['', [Validators.required]],
   });
 
   private readonly repaymentFormValue = toSignal(this.repaymentForm.valueChanges, {
     initialValue: this.repaymentForm.value,
-  });
-
-  private readonly repaymentFormStatus = toSignal(this.repaymentForm.statusChanges, {
-    initialValue: this.repaymentForm.status,
-  });
-
-  readonly checkingRepayment = computed(() => {
-    this.repaymentFormStatus();
-    return this.repaymentForm.get('repaymentId')?.status === 'PENDING';
-  });
-
-  readonly repaymentCheckErrorMessage = computed(() => {
-    this.repaymentFormStatus();
-    const errors = this.repaymentForm.get('repaymentId')?.errors;
-    if (!errors) return null;
-    if (errors['loanNotOwned']) return 'Ce prêt ne vous appartient pas.';
-    if (errors['loanNotRepayable']) return "Ce prêt n'est plus éligible au remboursement.";
-    if (errors['installmentNotPayable']) return "Cette mensualité n'est plus payable.";
-    if (errors['insufficientBalance']) return 'Solde insuffisant pour payer cette mensualité.';
-    if (errors['required']) return null;
-    return 'Impossible de vérifier cette mensualité pour le moment. Veuillez réessayer.';
   });
 
   readonly repaymentSubmitting = signal(false);
@@ -186,17 +138,9 @@ export class ClientLoanDetailComponent implements OnInit {
   });
 
   readonly canPayInstallment = computed(() => {
-    this.repaymentFormStatus();
     const loan = this.loan();
     const installment = this.selectedInstallment();
-    if (
-      !loan ||
-      !installment ||
-      this.accountSuspended() ||
-      this.repaymentSubmitting() ||
-      !isRepayableLoan(loan) ||
-      !this.repaymentForm.valid
-    ) {
+    if (!loan || !installment || this.accountSuspended() || this.repaymentSubmitting() || !isRepayableLoan(loan)) {
       return false;
     }
     const amount = this.selectedInstallmentAmount();
@@ -227,7 +171,7 @@ export class ClientLoanDetailComponent implements OnInit {
     }
 
     this.walletBalance.set(user.walletBalance);
-    this.loadLoan(loanId, user.id);
+    this.loadLoan(loanId);
 
     this.userService.getById(user.id).subscribe({
       next: (freshUser) => {
@@ -238,13 +182,18 @@ export class ClientLoanDetailComponent implements OnInit {
   }
 
   retry(): void {
-    const user = this.authService.getCurrentUser();
     const loanId = this.route.snapshot.paramMap.get('id');
-    if (!user || !loanId) return;
-    this.loadLoan(loanId, user.id);
+    if (!loanId) return;
+    this.loadLoan(loanId);
   }
 
-  private loadLoan(loanId: string, userId: string): void {
+  /**
+   * Le statut du prêt et de son échéancier est déjà à jour côté serveur (la
+   * synchronisation des retards tourne automatiquement, voir
+   * `RepaymentService.syncOverdueStatuses` côté backend) : un simple GET
+   * suffit, plus besoin de PATCH corrective après lecture.
+   */
+  private loadLoan(loanId: string): void {
     this.loading.set(true);
     this.error.set(null);
 
@@ -253,15 +202,9 @@ export class ClientLoanDetailComponent implements OnInit {
       repayments: this.repaymentService.getByLoan(loanId),
     }).subscribe({
       next: ({ loan, repayments }) => {
-        if (loan.userId !== userId) {
-          this.error.set('Prêt introuvable.');
-          this.loading.set(false);
-          return;
-        }
         this.loan.set(loan);
         this.repayments.set(repayments);
         this.loading.set(false);
-        this.syncOverdueStatuses(repayments);
       },
       error: () => {
         this.error.set('Impossible de charger ce prêt.');
@@ -270,79 +213,8 @@ export class ClientLoanDetailComponent implements OnInit {
     });
   }
 
-  /**
-   * Reclasse EN_RETARD les échéances de ce prêt dont la date est dépassée,
-   * puis aligne le statut du prêt sur l'échéancier à jour (voir
-   * `LoanService.syncStatusFromRepayments`).
-   */
-  private syncOverdueStatuses(repayments: Repayment[]): void {
-    this.repaymentService.syncOverdueStatuses(repayments).subscribe({
-      next: (updated) => {
-        this.repayments.set(updated);
-
-        const loan = this.loan();
-        if (loan) {
-          this.loanService.syncStatusFromRepayments(loan, updated).subscribe({
-            next: (updatedLoan) => this.loan.set(updatedLoan),
-          });
-        }
-      },
-    });
-  }
-
   toggleSchedule(): void {
     this.scheduleExpanded.update((expanded) => !expanded);
-  }
-
-  /**
-   * Validateur asynchrone du contrôle `repaymentId` : relit côté serveur le
-   * prêt et l'échéance sélectionnée dès qu'une mensualité est choisie, pour
-   * vérifier (dans cet ordre) qu'elle appartient bien au client connecté,
-   * que le prêt est toujours remboursable, que l'échéance est encore
-   * payable et que le solde du portefeuille couvre son montant. N'effectue
-   * aucun appel HTTP direct : passe uniquement par `LoanService`,
-   * `RepaymentService` et `UserService`.
-   */
-  private repaymentAsyncValidator(control: AbstractControl): Observable<ValidationErrors | null> {
-    const installmentId = control.value;
-    if (!installmentId) {
-      return of(null);
-    }
-
-    const user = this.authService.getCurrentUser();
-    const loan = this.loan();
-    if (!user || !loan) {
-      return of({ repaymentCheckFailed: true });
-    }
-
-    return forkJoin({
-      freshLoan: this.loanService.getById(loan.id),
-      freshInstallment: this.repaymentService.getById(installmentId),
-      freshUser: this.userService.getById(user.id),
-    }).pipe(
-      map(({ freshLoan, freshInstallment, freshUser }) => {
-        if (freshLoan.userId !== user.id) {
-          return { loanNotOwned: true };
-        }
-        if (!isRepayableLoan(freshLoan)) {
-          return { loanNotRepayable: true };
-        }
-        const payableStatuses: RepaymentStatus[] = [
-          RepaymentStatus.PLANIFIE,
-          RepaymentStatus.EN_RETARD,
-          RepaymentStatus.IMPAYE,
-        ];
-        if (!payableStatuses.includes(freshInstallment.status)) {
-          return { installmentNotPayable: true };
-        }
-        const amount = freshInstallment.amountDue + (freshInstallment.lateFee ?? 0);
-        if (amount > freshUser.walletBalance) {
-          return { insufficientBalance: true };
-        }
-        return null;
-      }),
-      catchError(() => of({ repaymentCheckFailed: true })),
-    );
   }
 
   isRepayableLoan(loan: Loan): boolean {
@@ -350,61 +222,7 @@ export class ClientLoanDetailComponent implements OnInit {
   }
 
   payInstallment(): void {
-    if (this.repaymentSubmitting()) return;
-
-    // Bloque la soumission tant que la validation asynchrone de l'échéance
-    // sélectionnée est en cours (PENDING) ou a échoué : le message d'erreur
-    // déjà porté par le contrôle (voir `repaymentCheckErrorMessage`) est
-    // repris tel quel, sauf pour une simple absence de sélection (`required`),
-    // qui ne doit écraser aucun message déjà affiché par ailleurs.
-    if (!this.repaymentForm.valid) {
-      if (!this.repaymentForm.pending) {
-        const message = this.repaymentCheckErrorMessage();
-        if (message) {
-          this.repaymentErrorMessage.set(message);
-        }
-      }
-      return;
-    }
-
-    const user = this.authService.getCurrentUser();
-    if (!user) {
-      this.repaymentErrorMessage.set('Utilisateur non connecté.');
-      return;
-    }
-
-    if (this.accountSuspended()) {
-      this.repaymentErrorMessage.set('Votre compte est suspendu. Vous ne pouvez plus effectuer de remboursement.');
-      return;
-    }
-
-    const loan = this.loan();
-    if (!loan || !isRepayableLoan(loan)) {
-      this.repaymentErrorMessage.set("Ce prêt n'est pas éligible au remboursement.");
-      return;
-    }
-
-    const installment = this.selectedInstallment();
-    if (
-      !installment ||
-      (installment.status !== RepaymentStatus.PLANIFIE &&
-        installment.status !== RepaymentStatus.EN_RETARD &&
-        installment.status !== RepaymentStatus.IMPAYE)
-    ) {
-      this.repaymentErrorMessage.set("Cette mensualité n'est plus payable.");
-      return;
-    }
-
-    const estimatedAmount = installment.amountDue + (installment.lateFee ?? 0);
-    if (estimatedAmount <= 0) {
-      this.repaymentErrorMessage.set('Montant de remboursement invalide.');
-      return;
-    }
-    if (estimatedAmount > this.walletBalance()) {
-      this.repaymentErrorMessage.set('Solde insuffisant pour payer cette mensualité.');
-      return;
-    }
-
+    if (this.repaymentSubmitting() || this.canPayInstallment() === false) return;
     this.pendingAction.set('installment');
   }
 
@@ -426,13 +244,13 @@ export class ClientLoanDetailComponent implements OnInit {
     this.pendingAction.set(null);
   }
 
+  /** Débit, écriture de la transaction et mise à jour de l'échéance/du prêt sont atomiques côté serveur. */
   private confirmPayInstallment(): void {
     if (this.repaymentSubmitting()) return;
 
-    const user = this.authService.getCurrentUser();
-    const loan = this.loan();
     const installment = this.selectedInstallment();
-    if (!user || !loan || !installment) {
+    const loan = this.loan();
+    if (!installment || !loan) {
       this.pendingAction.set(null);
       return;
     }
@@ -441,170 +259,31 @@ export class ClientLoanDetailComponent implements OnInit {
     this.repaymentSuccessMessage.set(null);
     this.repaymentErrorMessage.set(null);
 
-    // JSON Server ne garantit aucune atomicité : on relit le prêt, la
-    // mensualité et le solde du portefeuille côté serveur juste avant de
-    // débiter, pour ne pas se fier à un état local qui pourrait être périmé
-    // et éviter de calculer un montant (ou un solde suspendu) incorrect.
-    forkJoin({
-      freshLoan: this.loanService.getById(loan.id),
-      freshInstallment: this.repaymentService.getById(installment.id),
-      freshUser: this.userService.getById(user.id),
-    }).subscribe({
-      next: ({ freshLoan, freshInstallment, freshUser }) => {
-        if (freshUser.status === UserStatus.SUSPENDED) {
-          this.repaymentErrorMessage.set('Votre compte est suspendu. Vous ne pouvez plus effectuer de remboursement.');
-          this.closeConfirmModal();
-          this.accountSuspended.set(true);
-          return;
-        }
-        if (!isRepayableLoan(freshLoan)) {
-          this.repaymentErrorMessage.set("Ce prêt n'est plus éligible au remboursement.");
-          this.closeConfirmModal();
-          this.refreshLoanAndRepayments(freshLoan.id);
-          return;
-        }
-        if (
-          freshInstallment.status !== RepaymentStatus.PLANIFIE &&
-          freshInstallment.status !== RepaymentStatus.EN_RETARD &&
-          freshInstallment.status !== RepaymentStatus.IMPAYE
-        ) {
-          this.repaymentErrorMessage.set("Cette mensualité n'est plus payable.");
-          this.closeConfirmModal();
-          this.refreshLoanAndRepayments(freshLoan.id);
-          return;
-        }
-
-        const amount = freshInstallment.amountDue + (freshInstallment.lateFee ?? 0);
-        this.walletBalance.set(freshUser.walletBalance);
-        if (amount > freshUser.walletBalance) {
-          this.repaymentErrorMessage.set('Solde insuffisant pour payer cette mensualité.');
-          this.closeConfirmModal();
-          return;
-        }
-
-        const transaction: Omit<Transaction, 'id' | 'createdAt'> = {
-          type: TransactionType.REMBOURSEMENT_PRET,
-          status: TransactionStatus.REUSSIE,
-          amount,
-          senderId: user.id,
-          relatedLoanId: freshLoan.id,
-          description: `Remboursement mensualité n°${freshInstallment.installmentNumber} - prêt ${freshLoan.id}`,
-        };
-
-        this.transactionService.create(transaction).subscribe({
-          next: (createdTransaction) => {
-            const now = new Date().toISOString();
-            const newWalletBalance = freshUser.walletBalance - amount;
-            // `remainingBalance` ne suit que le capital + intérêts (la somme
-            // des `amountDue` de l'échéancier) : la pénalité de retard,
-            // réglée en même temps, ne doit pas venir s'y soustraire une
-            // deuxième fois (elle n'y avait jamais été ajoutée).
-            const newRemainingBalance = Math.max(0, freshLoan.remainingBalance - freshInstallment.amountDue);
-            const loanChanges: Partial<Loan> = { remainingBalance: newRemainingBalance };
-            if (newRemainingBalance === 0) {
-              loanChanges.status = LoanStatus.REMBOURSE;
-              loanChanges.endDate = now;
-            } else {
-              // Si cette mensualité était la dernière encore en retard, le
-              // prêt redevient EN_COURS dans le même PATCH ; s'il en reste
-              // d'autres, il reste EN_RETARD (voir `deriveLoanStatus`).
-              const projectedRepayments = this.repayments().map((installment) =>
-                installment.id === freshInstallment.id
-                  ? { ...installment, status: RepaymentStatus.PAYE }
-                  : installment,
-              );
-              const nextStatus = deriveLoanStatus(freshLoan, projectedRepayments);
-              if (nextStatus !== freshLoan.status) {
-                loanChanges.status = nextStatus;
-              }
-            }
-
-            forkJoin({
-              user: this.userService.update(user.id, { walletBalance: newWalletBalance }),
-              repayment: this.repaymentService.update(freshInstallment.id, {
-                status: RepaymentStatus.PAYE,
-                amountPaid: amount,
-                paymentDate: now,
-              }),
-              loan: this.loanService.update(freshLoan.id, loanChanges),
-            }).subscribe({
-              next: ({ user: updatedUser }) => {
-                this.walletBalance.set(updatedUser.walletBalance);
-                this.repaymentSuccessMessage.set('Mensualité payée avec succès.');
-                this.closeConfirmModal();
-                this.refreshLoanAndRepayments(freshLoan.id);
-              },
-              error: () => {
-                // La transaction est déjà enregistrée en REUSSIE mais le
-                // débit/l'échéance/le prêt n'ont pas pu être mis à jour : on
-                // corrige son statut pour ne pas laisser un enregistrement
-                // "réussi" alors que le remboursement n'a pas réellement abouti.
-                this.transactionService
-                  .update(createdTransaction.id, { status: TransactionStatus.ECHOUEE })
-                  .subscribe();
-                this.repaymentErrorMessage.set(
-                  "Le remboursement a été enregistré mais la mise à jour de votre compte a échoué. Contactez le support.",
-                );
-                this.closeConfirmModal();
-              },
-            });
-          },
-          error: () => {
-            this.repaymentErrorMessage.set("Impossible d'effectuer le remboursement. Veuillez réessayer.");
-            this.closeConfirmModal();
-          },
-        });
-      },
-      error: () => {
-        this.repaymentErrorMessage.set("Impossible d'effectuer le remboursement. Veuillez réessayer.");
+    this.repaymentService.payInstallment(installment.id).subscribe({
+      next: () => {
+        this.repaymentSuccessMessage.set('Mensualité payée avec succès.');
         this.closeConfirmModal();
+        this.repaymentForm.reset();
+        this.refreshAfterPayment(loan.id);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.repaymentErrorMessage.set(err.error?.message ?? "Impossible d'effectuer le remboursement. Veuillez réessayer.");
+        this.closeConfirmModal();
+        this.refreshAfterPayment(loan.id);
       },
     });
   }
 
   payTotal(): void {
-    if (this.repaymentSubmitting()) return;
-
-    const user = this.authService.getCurrentUser();
-    if (!user) {
-      this.repaymentErrorMessage.set('Utilisateur non connecté.');
-      return;
-    }
-
-    if (this.accountSuspended()) {
-      this.repaymentErrorMessage.set('Votre compte est suspendu. Vous ne pouvez plus effectuer de remboursement.');
-      return;
-    }
-
-    const loan = this.loan();
-    if (!loan || !isRepayableLoan(loan)) {
-      this.repaymentErrorMessage.set("Ce prêt n'est pas éligible au remboursement.");
-      return;
-    }
-
-    // Vérification rapide côté client sur la valeur en cache, pour échouer
-    // tôt sans appel réseau si le solde est visiblement insuffisant. Le
-    // montant réellement débité, lui, n'est jamais calculé à partir de cette
-    // valeur : voir le recalcul à partir de l'échéancier ci-dessous.
-    const estimatedAmount = loan.remainingBalance;
-    if (estimatedAmount <= 0) {
-      this.repaymentErrorMessage.set('Ce prêt est déjà entièrement remboursé.');
-      return;
-    }
-    if (estimatedAmount > this.walletBalance()) {
-      this.repaymentErrorMessage.set('Solde insuffisant pour rembourser le solde total.');
-      return;
-    }
-
+    if (this.repaymentSubmitting() || this.canPayTotal() === false) return;
     this.pendingAction.set('total');
   }
 
   private confirmPayTotal(): void {
     if (this.repaymentSubmitting()) return;
 
-    const user = this.authService.getCurrentUser();
     const loan = this.loan();
-    if (!user || !loan) {
+    if (!loan) {
       this.pendingAction.set(null);
       return;
     }
@@ -613,128 +292,24 @@ export class ClientLoanDetailComponent implements OnInit {
     this.repaymentSuccessMessage.set(null);
     this.repaymentErrorMessage.set(null);
 
-    // Relecture du prêt, de son échéancier ET du solde du portefeuille côté
-    // serveur juste avant le débit : le montant réellement dû est recalculé
-    // à partir des échéances encore impayées (capital + pénalités), pas
-    // depuis la seule valeur en cache `remainingBalance`/`walletBalance` qui
-    // pourrait être désynchronisée.
-    forkJoin({
-      freshLoan: this.loanService.getById(loan.id),
-      freshRepayments: this.repaymentService.getByLoan(loan.id),
-      freshUser: this.userService.getById(user.id),
-    }).subscribe({
-      next: ({ freshLoan, freshRepayments, freshUser }) => {
-        if (freshUser.status === UserStatus.SUSPENDED) {
-          this.repaymentErrorMessage.set('Votre compte est suspendu. Vous ne pouvez plus effectuer de remboursement.');
-          this.closeConfirmModal();
-          this.accountSuspended.set(true);
-          return;
-        }
-        if (!isRepayableLoan(freshLoan)) {
-          this.repaymentErrorMessage.set("Ce prêt n'est plus éligible au remboursement.");
-          this.closeConfirmModal();
-          this.refreshLoanAndRepayments(freshLoan.id);
-          return;
-        }
-
-        const outstandingInstallments = freshRepayments.filter(
-          (installment) =>
-            installment.status === RepaymentStatus.PLANIFIE ||
-            installment.status === RepaymentStatus.EN_RETARD ||
-            installment.status === RepaymentStatus.IMPAYE,
-        );
-
-        const amount = outstandingInstallments.reduce(
-          (sum, installment) => sum + installment.amountDue + (installment.lateFee ?? 0),
-          0,
-        );
-
-        this.walletBalance.set(freshUser.walletBalance);
-        if (amount <= 0) {
-          this.repaymentErrorMessage.set('Ce prêt est déjà entièrement remboursé.');
-          this.closeConfirmModal();
-          return;
-        }
-        if (amount > freshUser.walletBalance) {
-          this.repaymentErrorMessage.set('Solde insuffisant pour rembourser le solde total.');
-          this.closeConfirmModal();
-          return;
-        }
-
-        const transaction: Omit<Transaction, 'id' | 'createdAt'> = {
-          type: TransactionType.REMBOURSEMENT_PRET,
-          status: TransactionStatus.REUSSIE,
-          amount,
-          senderId: user.id,
-          relatedLoanId: freshLoan.id,
-          description: `Remboursement total du prêt ${freshLoan.id}`,
-        };
-
-        this.transactionService.create(transaction).subscribe({
-          next: (createdTransaction) => {
-            const now = new Date().toISOString();
-            const newWalletBalance = freshUser.walletBalance - amount;
-            const repaymentUpdates = outstandingInstallments.length
-              ? forkJoin(
-                  outstandingInstallments.map((installment) =>
-                    this.repaymentService.update(installment.id, {
-                      status: RepaymentStatus.PAYE,
-                      amountPaid: installment.amountDue + (installment.lateFee ?? 0),
-                      paymentDate: now,
-                    }),
-                  ),
-                )
-              : of([]);
-
-            forkJoin({
-              user: this.userService.update(user.id, { walletBalance: newWalletBalance }),
-              loan: this.loanService.update(freshLoan.id, {
-                remainingBalance: 0,
-                status: LoanStatus.REMBOURSE,
-                endDate: now,
-              }),
-              repayments: repaymentUpdates,
-            }).subscribe({
-              next: ({ user: updatedUser }) => {
-                this.walletBalance.set(updatedUser.walletBalance);
-                this.repaymentSuccessMessage.set('Prêt intégralement remboursé avec succès.');
-                this.closeConfirmModal();
-                this.refreshLoanAndRepayments(freshLoan.id);
-              },
-              error: () => {
-                // Voir le même correctif dans `payInstallment()` : la
-                // transaction ne doit pas rester REUSSIE si le remboursement
-                // n'a en réalité pas pu être appliqué.
-                this.transactionService
-                  .update(createdTransaction.id, { status: TransactionStatus.ECHOUEE })
-                  .subscribe();
-                this.repaymentErrorMessage.set(
-                  "Le remboursement a été enregistré mais la mise à jour de votre compte a échoué. Contactez le support.",
-                );
-                this.closeConfirmModal();
-              },
-            });
-          },
-          error: () => {
-            this.repaymentErrorMessage.set("Impossible d'effectuer le remboursement. Veuillez réessayer.");
-            this.closeConfirmModal();
-          },
-        });
-      },
-      error: () => {
-        this.repaymentErrorMessage.set("Impossible d'effectuer le remboursement. Veuillez réessayer.");
+    this.repaymentService.payTotal(loan.id).subscribe({
+      next: () => {
+        this.repaymentSuccessMessage.set('Prêt intégralement remboursé avec succès.');
         this.closeConfirmModal();
+        this.refreshAfterPayment(loan.id);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.repaymentErrorMessage.set(err.error?.message ?? "Impossible d'effectuer le remboursement. Veuillez réessayer.");
+        this.closeConfirmModal();
+        this.refreshAfterPayment(loan.id);
       },
     });
   }
 
-  /**
-   * Recharge le prêt après un remboursement réussi. En cas d'échec, on
-   * conserve l'affichage existant (le remboursement est déjà acquis côté
-   * serveur) plutôt que de basculer tout l'écran en erreur, ce qui
-   * masquerait le message de succès déjà affiché.
-   */
-  private refreshLoanAndRepayments(loanId: string): void {
+  /** Recharge le prêt, son échéancier et le solde du portefeuille après un paiement (réussi ou non). */
+  private refreshAfterPayment(loanId: string): void {
+    const user = this.authService.getCurrentUser();
+
     forkJoin({
       loan: this.loanService.getById(loanId),
       repayments: this.repaymentService.getByLoan(loanId),
@@ -742,13 +317,14 @@ export class ClientLoanDetailComponent implements OnInit {
       next: ({ loan, repayments }) => {
         this.loan.set(loan);
         this.repayments.set(repayments);
-        this.repaymentForm.reset();
-      },
-      error: () => {
-        // Le remboursement est déjà enregistré ; seul le rafraîchissement a
-        // échoué. L'utilisateur peut rafraîchir via "Réessayer".
       },
     });
+
+    if (user) {
+      this.userService.getById(user.id).subscribe({
+        next: (freshUser) => this.walletBalance.set(freshUser.walletBalance),
+      });
+    }
   }
 
   readonly formatCurrency = formatCurrency;

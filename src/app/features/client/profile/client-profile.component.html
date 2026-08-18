@@ -1,0 +1,177 @@
+<div class="profile-page">
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Chargement du profil...</p>
+    </div>
+  } @else if (loadError()) {
+    <div class="error-state">
+      <p class="error-message">{{ loadError() }}</p>
+      <button type="button" class="retry-btn" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (user(); as currentUser) {
+    <div class="profile-header">
+      <div class="avatar">{{ initials() }}</div>
+      <div class="profile-header-info">
+        <h1>{{ currentUser.firstName }} {{ currentUser.lastName }}</h1>
+        <div class="profile-header-meta">
+          <span class="badge badge-role">{{ roleLabel(currentUser.role) }}</span>
+          <span class="badge" [class.badge-success]="currentUser.status === 'ACTIVE'" [class.badge-danger]="currentUser.status !== 'ACTIVE'">
+            {{ statusLabel(currentUser.status) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <section class="card">
+        <div class="card-header">
+          <h2>Informations personnelles</h2>
+          @if (!editingProfile()) {
+            <button type="button" class="btn-link" (click)="startEditProfile()">Modifier</button>
+          }
+        </div>
+
+        @if (profileSuccess()) {
+          <p class="success-message">{{ profileSuccess() }}</p>
+        }
+        @if (profileError()) {
+          <p class="error-message">{{ profileError() }}</p>
+        }
+
+        @if (!editingProfile()) {
+          <dl class="info-list">
+            <div class="info-row">
+              <dt>Prénom</dt>
+              <dd>{{ currentUser.firstName }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Nom</dt>
+              <dd>{{ currentUser.lastName }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Téléphone</dt>
+              <dd>{{ currentUser.phone }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Email</dt>
+              <dd>{{ currentUser.email }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Numéro de compte</dt>
+              <dd>{{ currentUser.accountNumber }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Membre depuis</dt>
+              <dd>{{ formatDate(currentUser.createdAt) }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate class="profile-form">
+            <div class="form-group">
+              <label class="form-label" for="firstName">Prénom</label>
+              <input class="form-input" id="firstName" type="text" formControlName="firstName" autocomplete="given-name" />
+              @if (firstNameControl.invalid && firstNameControl.touched) {
+                <p class="field-error">Le prénom est obligatoire.</p>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="lastName">Nom</label>
+              <input class="form-input" id="lastName" type="text" formControlName="lastName" autocomplete="family-name" />
+              @if (lastNameControl.invalid && lastNameControl.touched) {
+                <p class="field-error">Le nom est obligatoire.</p>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="phone">Téléphone</label>
+              <input class="form-input" id="phone" type="tel" formControlName="phone" autocomplete="tel" placeholder="+221771234567" />
+              @if (phoneControl.invalid && phoneControl.touched) {
+                <p class="field-error">
+                  @if (phoneControl.hasError('required')) {
+                    Le téléphone est obligatoire.
+                  } @else if (phoneControl.hasError('pattern')) {
+                    Le téléphone doit être au format +221XXXXXXXXX.
+                  }
+                </p>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input class="form-input" id="email" type="email" [value]="currentUser.email" disabled />
+              <p class="field-hint">L'email ne peut pas être modifié.</p>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="primary-btn-outline" (click)="cancelEditProfile()" [disabled]="savingProfile()">
+                Annuler
+              </button>
+              <button type="submit" class="primary-btn" [disabled]="savingProfile()">
+                {{ savingProfile() ? 'Enregistrement...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </form>
+        }
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Sécurité</h2>
+        </div>
+        <p class="card-subtitle">Modifiez votre mot de passe régulièrement pour sécuriser votre compte.</p>
+
+        @if (passwordSuccess()) {
+          <p class="success-message">{{ passwordSuccess() }}</p>
+        }
+        @if (passwordError()) {
+          <p class="error-message">{{ passwordError() }}</p>
+        }
+
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate class="profile-form">
+          <div class="form-group">
+            <label class="form-label" for="currentPassword">Mot de passe actuel</label>
+            <input class="form-input" id="currentPassword" type="password" formControlName="currentPassword" autocomplete="current-password" />
+            @if (currentPasswordControl.invalid && currentPasswordControl.touched) {
+              <p class="field-error">Le mot de passe actuel est obligatoire.</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="newPassword">Nouveau mot de passe</label>
+            <input class="form-input" id="newPassword" type="password" formControlName="newPassword" autocomplete="new-password" />
+            @if (newPasswordControl.invalid && newPasswordControl.touched) {
+              <p class="field-error">
+                @if (newPasswordControl.hasError('required')) {
+                  Le nouveau mot de passe est obligatoire.
+                } @else if (newPasswordControl.hasError('minlength')) {
+                  Le mot de passe doit contenir au moins 8 caractères.
+                }
+              </p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirmNewPassword">Confirmer le nouveau mot de passe</label>
+            <input class="form-input" id="confirmNewPassword" type="password" formControlName="confirmNewPassword" autocomplete="new-password" />
+            @if (confirmNewPasswordControl.invalid && confirmNewPasswordControl.touched) {
+              <p class="field-error">
+                @if (confirmNewPasswordControl.hasError('required')) {
+                  La confirmation est obligatoire.
+                } @else if (confirmNewPasswordControl.hasError('passwordMismatch')) {
+                  Les mots de passe ne correspondent pas.
+                }
+              </p>
+            }
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn" [disabled]="changingPassword()">
+              {{ changingPassword() ? 'Modification...' : 'Modifier le mot de passe' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</div>

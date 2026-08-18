@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { spaceUrlForRole } from '../../../core/guards/auth.guard';
@@ -8,7 +8,7 @@ import { spaceUrlForRole } from '../../../core/guards/auth.guard';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
@@ -22,10 +22,15 @@ export class LoginComponent {
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
   });
 
   get emailControl() {
     return this.form.controls.email;
+  }
+
+  get passwordControl() {
+    return this.form.controls.password;
   }
 
   onSubmit(): void {
@@ -41,15 +46,14 @@ export class LoginComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.login(this.emailControl.value).subscribe({
+    this.authService.login(this.emailControl.value, this.passwordControl.value).subscribe({
       next: (user) => {
         this.loading.set(false);
         this.router.navigateByUrl(spaceUrlForRole(user.role));
       },
-      error: (err: unknown) => {
+      error: (err: { error?: { message?: string } }) => {
         this.loading.set(false);
-        const message = err instanceof Error ? err.message : 'Aucun utilisateur trouvé pour cet email.';
-        this.errorMessage.set(message);
+        this.errorMessage.set(err?.error?.message ?? 'Email ou mot de passe incorrect.');
       },
     });
   }
