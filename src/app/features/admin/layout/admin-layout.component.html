@@ -37,7 +37,7 @@
 
       <div class="header-right">
         <span class="user-name">{{ fullName }}</span>
-        <button type="button" class="logout-btn" (click)="logout()">Déconnexion</button>
+        <button type="button" class="logout-btn" (click)="requestLogout()">Déconnexion</button>
       </div>
     </header>
 
@@ -45,4 +45,14 @@
       <router-outlet />
     </main>
   </div>
+
+  <app-confirmation-modal
+    [open]="showLogoutModal()"
+    title="Confirmer la déconnexion"
+    message="Voulez-vous vraiment vous déconnecter ?"
+    confirmLabel="Se déconnecter"
+    cancelLabel="Annuler"
+    (confirm)="confirmLogout()"
+    (cancel)="cancelLogout()"
+  />
 </div>

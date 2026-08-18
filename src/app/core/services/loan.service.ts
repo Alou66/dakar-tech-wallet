@@ -1,11 +1,9 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { Loan, LoanStatus } from '../models/loan.model';
-import { Repayment } from '../models/repayment.model';
-import { deriveLoanStatus } from '../utils/loan-status.util';
+import { Loan } from '../models/loan.model';
 
 @Injectable({ providedIn: 'root' })
 export class LoanService {
@@ -21,33 +19,23 @@ export class LoanService {
   }
 
   getByUser(userId: string): Observable<Loan[]> {
-    const params = new HttpParams().set('userId', userId);
-    return this.http.get<Loan[]>(this.resourceUrl, { params });
+    return this.http.get<Loan[]>(`${this.resourceUrl}/user/${userId}`);
   }
 
-  create(loan: Omit<Loan, 'id'>): Observable<Loan> {
-    return this.http.post<Loan>(this.resourceUrl, loan);
-  }
-
-  update(id: string, changes: Partial<Loan>): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.resourceUrl}/${id}`, changes);
-  }
-
-  updateStatus(id: string, status: LoanStatus): Observable<Loan> {
-    return this.update(id, { status });
+  /** Le taux, la mensualité et le total dû sont calculés côté serveur. */
+  requestLoan(amount: number, purpose: string, durationMonths: number): Observable<Loan> {
+    return this.http.post<Loan>(this.resourceUrl, { amount, purpose, durationMonths });
   }
 
   /**
-   * Aligne le statut du prêt sur l'état réel de son échéancier (voir
-   * `deriveLoanStatus`) : bascule EN_RETARD dès qu'une échéance l'est,
-   * revient à EN_COURS une fois toutes régularisées. N'envoie aucune
-   * requête si le statut dérivé est déjà celui du prêt (idempotent).
+   * Approuve, décaisse et génère l'échéancier en une seule opération
+   * atomique côté serveur (voir `LoanService.approve` côté backend).
    */
-  syncStatusFromRepayments(loan: Loan, repayments: Repayment[]): Observable<Loan> {
-    const nextStatus = deriveLoanStatus(loan, repayments);
-    if (nextStatus === loan.status) {
-      return of(loan);
-    }
-    return this.updateStatus(loan.id, nextStatus);
+  approve(loanId: string): Observable<Loan> {
+    return this.http.post<Loan>(`${this.resourceUrl}/${loanId}/approve`, {});
+  }
+
+  reject(loanId: string): Observable<Loan> {
+    return this.http.post<Loan>(`${this.resourceUrl}/${loanId}/reject`, {});
   }
 }

@@ -2,6 +2,7 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ConfirmationModalComponent } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
 
 interface NavItem {
   label: string;
@@ -18,7 +19,7 @@ const NAV_ITEMS: NavItem[] = [
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ConfirmationModalComponent],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.css'
 })
@@ -27,6 +28,7 @@ export class AdminLayoutComponent {
   private readonly router = inject(Router);
   readonly sidebarOpen = signal(false);
   readonly navItems = NAV_ITEMS;
+  readonly showLogoutModal = signal(false);
 
   readonly currentUser = this.authService.currentUser;
 
@@ -43,7 +45,16 @@ export class AdminLayoutComponent {
     this.sidebarOpen.set(false);
   }
 
-  logout(): void {
+  requestLogout(): void {
+    this.showLogoutModal.set(true);
+  }
+
+  cancelLogout(): void {
+    this.showLogoutModal.set(false);
+  }
+
+  confirmLogout(): void {
+    this.showLogoutModal.set(false);
     this.authService.logout();
     this.router.navigateByUrl('/login');
   }

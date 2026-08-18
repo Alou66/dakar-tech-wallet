@@ -2,13 +2,13 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Observable, forkJoin, of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { UserService } from '../../../core/services/user.service';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { User, UserStatus } from '../../../core/models/user.model';
-import { Transaction, TransactionType, TransactionStatus } from '../../../core/models/transaction.model';
 import {
   ConfirmationDetail,
   ConfirmationModalComponent,
@@ -173,15 +173,21 @@ export class ClientTransfersComponent implements OnInit {
     this.confirmedSubmit();
   }
 
+  /**
+   * Débit/crédit et écriture de la transaction sont désormais atomiques
+   * côté serveur (voir `TransactionService.transfer` côté backend) : plus
+   * besoin de relire les soldes avant coup ni de compenser manuellement un
+   * échec partiel, le serveur ne laisse jamais d'état intermédiaire.
+   */
   private confirmedSubmit(): void {
     if (this.submitting()) return;
 
-    const user = this.currentUser();
     const beneficiary = this.beneficiary();
+    const accountNumber = this.form.get('accountNumber')?.value;
     const amount = this.form.get('amount')?.value;
     const description = this.form.get('description')?.value;
 
-    if (!user || !beneficiary || !amount) {
+    if (!beneficiary || !accountNumber || !amount) {
       this.showConfirmModal.set(false);
       return;
     }
@@ -190,86 +196,23 @@ export class ClientTransfersComponent implements OnInit {
     this.successMessage.set(null);
     this.errorMessage.set(null);
 
-    // JSON Server ne garantit aucune atomicité entre requêtes : on relit le
-    // solde de l'expéditeur et du bénéficiaire côté serveur juste avant de
-    // débiter/créditer, pour ne jamais écraser un solde avec une valeur
-    // calculée à partir d'un cache pouvant être périmé (même principe que
-    // les relectures fraîches de `ClientLoanDetailComponent` /
-    // `AdminLoansComponent`).
-    forkJoin({
-      freshSender: this.userService.getById(user.id),
-      freshBeneficiary: this.userService.getById(beneficiary.id),
-    }).subscribe({
-      next: ({ freshSender, freshBeneficiary }) => {
-        if (freshSender.status === UserStatus.SUSPENDED) {
-          this.errorMessage.set('Votre compte est suspendu. Vous ne pouvez plus effectuer de virement.');
-          this.submitting.set(false);
-          this.showConfirmModal.set(false);
-          return;
+    this.transactionService.transfer(accountNumber, amount, description).subscribe({
+      next: () => {
+        const user = this.authService.getCurrentUser();
+        if (user) {
+          this.userService.getById(user.id).subscribe({
+            next: (freshUser) => this.currentUserSignal.set(freshUser),
+          });
         }
-        if (freshBeneficiary.status === UserStatus.SUSPENDED) {
-          this.errorMessage.set('Le compte du bénéficiaire est suspendu.');
-          this.submitting.set(false);
-          this.showConfirmModal.set(false);
-          return;
-        }
-        if (amount > freshSender.walletBalance) {
-          this.errorMessage.set('Solde insuffisant pour effectuer ce virement.');
-          this.submitting.set(false);
-          this.showConfirmModal.set(false);
-          return;
-        }
-
-        const transaction: Omit<Transaction, 'id' | 'createdAt'> = {
-          type: TransactionType.VIREMENT,
-          status: TransactionStatus.REUSSIE,
-          amount,
-          senderId: freshSender.id,
-          receiverId: freshBeneficiary.id,
-          description: description || undefined,
-        };
-
-        this.transactionService.create(transaction).subscribe({
-          next: (createdTransaction) => {
-            const newSenderBalance = freshSender.walletBalance - amount;
-            const newReceiverBalance = freshBeneficiary.walletBalance + amount;
-
-            forkJoin({
-              sender: this.userService.update(freshSender.id, { walletBalance: newSenderBalance }),
-              receiver: this.userService.update(freshBeneficiary.id, { walletBalance: newReceiverBalance }),
-            }).subscribe({
-              next: ({ sender }) => {
-                this.currentUserSignal.set(sender);
-                this.successMessage.set('Virement effectué avec succès.');
-                this.form.reset();
-                this.beneficiary.set(null);
-                this.beneficiaryError.set(null);
-                this.submitting.set(false);
-                this.showConfirmModal.set(false);
-              },
-              error: () => {
-                // La transaction est déjà enregistrée en REUSSIE mais les
-                // soldes n'ont pas pu être mis à jour : on corrige son statut
-                // pour ne pas laisser un enregistrement "réussi" alors
-                // qu'aucun montant n'a réellement été transféré.
-                this.transactionService
-                  .update(createdTransaction.id, { status: TransactionStatus.ECHOUEE })
-                  .subscribe();
-                this.errorMessage.set('Virement créé, mais la mise à jour des soldes a échoué.');
-                this.submitting.set(false);
-                this.showConfirmModal.set(false);
-              },
-            });
-          },
-          error: () => {
-            this.errorMessage.set('Impossible d\'effectuer le virement. Veuillez réessayer.');
-            this.submitting.set(false);
-            this.showConfirmModal.set(false);
-          },
-        });
+        this.successMessage.set('Virement effectué avec succès.');
+        this.form.reset();
+        this.beneficiary.set(null);
+        this.beneficiaryError.set(null);
+        this.submitting.set(false);
+        this.showConfirmModal.set(false);
       },
-      error: () => {
-        this.errorMessage.set('Impossible de vérifier les comptes avant le virement. Veuillez réessayer.');
+      error: (err: HttpErrorResponse) => {
+        this.errorMessage.set(err.error?.message ?? "Impossible d'effectuer le virement. Veuillez réessayer.");
         this.submitting.set(false);
         this.showConfirmModal.set(false);
       },

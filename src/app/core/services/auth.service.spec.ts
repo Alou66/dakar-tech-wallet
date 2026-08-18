@@ -43,44 +43,104 @@ describe('AuthService - login', () => {
     localStorage.clear();
   });
 
-  it('connecte un utilisateur ACTIF et le mémorise comme session courante', () => {
+  it('connecte un utilisateur avec un email/mot de passe valides et mémorise le token et la session', () => {
     const user = makeUser({ status: UserStatus.ACTIVE });
     let result: User | undefined;
 
-    service.login(user.email).subscribe((u) => (result = u));
+    service.login(user.email, 'password123').subscribe((u) => (result = u));
 
-    httpMock.expectOne((req) => req.url === `${API}/users` && req.params.get('email') === user.email).flush([user]);
+    const req = httpMock.expectOne(`${API}/auth/login`);
+    expect(req.request.body).toEqual({ email: user.email, password: 'password123' });
+    req.flush({ token: 'fake-jwt-token', user });
 
     expect(result).toEqual(user);
     expect(service.currentUser()).toEqual(user);
     expect(service.isAuthenticated()).toBe(true);
+    expect(service.getToken()).toBe('fake-jwt-token');
   });
 
-  it("11. refuse la connexion d'un utilisateur SUSPENDU et ne le mémorise pas comme session courante", () => {
-    const user = makeUser({ status: UserStatus.SUSPENDED });
-    let error: Error | undefined;
+  it('refuse la connexion avec des identifiants invalides et ne mémorise aucune session', () => {
+    let error: unknown;
 
-    service.login(user.email).subscribe({
+    service.login('fatou.ndiaye@example.sn', 'wrong-password').subscribe({
       error: (err) => (error = err),
     });
 
-    httpMock.expectOne((req) => req.url === `${API}/users` && req.params.get('email') === user.email).flush([user]);
+    httpMock.expectOne(`${API}/auth/login`).flush(
+      { message: 'Email ou mot de passe incorrect.' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
 
-    expect(error?.message).toBe('Votre compte a été suspendu. Contactez un administrateur.');
+    expect(error).toBeTruthy();
     expect(service.currentUser()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
+    expect(service.getToken()).toBeNull();
+  });
+});
+
+describe('AuthService - register', () => {
+  let service: AuthService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  it("refuse la connexion quand aucun utilisateur ne correspond à l'email", () => {
-    let error: Error | undefined;
+  afterEach(() => {
+    httpMock.verify();
+    localStorage.clear();
+  });
 
-    service.login('inconnu@example.sn').subscribe({
+  it('inscrit un client et ouvre automatiquement la session', () => {
+    const user = makeUser({ accountNumber: 'ACC-0004' });
+    const request = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      password: 'password123',
+    };
+    let result: User | undefined;
+
+    service.register(request).subscribe((u) => (result = u));
+
+    const req = httpMock.expectOne(`${API}/auth/register`);
+    expect(req.request.body).toEqual(request);
+    req.flush({ token: 'fake-jwt-token', user });
+
+    expect(result).toEqual(user);
+    expect(service.currentUser()).toEqual(user);
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.getToken()).toBe('fake-jwt-token');
+  });
+
+  it('refuse l\'inscription avec un email déjà utilisé et ne mémorise aucune session', () => {
+    const request = {
+      firstName: 'Awa',
+      lastName: 'Sarr',
+      email: 'fatou.ndiaye@example.sn',
+      phone: '+221773334455',
+      password: 'password123',
+    };
+    let error: unknown;
+
+    service.register(request).subscribe({
       error: (err) => (error = err),
     });
 
-    httpMock.expectOne((req) => req.url === `${API}/users`).flush([]);
+    httpMock.expectOne(`${API}/auth/register`).flush(
+      { message: 'Un compte existe déjà avec cet email.' },
+      { status: 409, statusText: 'Conflict' },
+    );
 
-    expect(error?.message).toBe('Aucun utilisateur trouvé pour cet email.');
+    expect(error).toBeTruthy();
     expect(service.currentUser()).toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.getToken()).toBeNull();
   });
 });

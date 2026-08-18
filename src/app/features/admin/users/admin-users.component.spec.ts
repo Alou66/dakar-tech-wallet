@@ -7,10 +7,9 @@ import { signal } from '@angular/core';
 import { AdminUsersComponent } from './admin-users.component';
 import { environment } from '../../../../environments/environment';
 import { User, UserRole, UserStatus } from '../../../core/models/user.model';
-import { Repayment, RepaymentStatus } from '../../../core/models/repayment.model';
+import { CreditScore, CreditScoreCategory } from '../../../core/models/credit-score.model';
 import { roleGuard } from '../../../core/guards/role.guard';
 import { AuthService } from '../../../core/services/auth.service';
-import { computeCreditScore } from '../../../core/utils/credit-score.util';
 
 const API = environment.apiUrl;
 
@@ -31,17 +30,16 @@ function makeUser(overrides: Partial<User> = {}): User {
   };
 }
 
-function makeRepayment(overrides: Partial<Repayment> = {}): Repayment {
+function makeCreditScore(overrides: Partial<CreditScore> = {}): CreditScore {
   return {
-    id: 'rp1',
-    loanId: 'loan1',
+    id: 'cs1',
     userId: 'u1',
-    installmentNumber: 1,
-    dueDate: '2026-06-01T00:00:00.000Z',
-    amountDue: 10000,
-    status: RepaymentStatus.PAYE,
-    amountPaid: 10000,
-    paymentDate: '2026-06-01T00:00:00.000Z',
+    score: 68,
+    category: CreditScoreCategory.BON,
+    totalLoans: 1,
+    onTimeRepayments: 2,
+    lateRepayments: 0,
+    calculatedAt: '2026-08-01T00:00:00.000Z',
     ...overrides,
   };
 }
@@ -72,18 +70,18 @@ function setup(): SetupResult {
  * y compris celles déjà annulées par un `forkJoin` précédent en erreur)
  * plutôt que `expectOne()`, pour rester robuste après un `retry()`.
  *
- * Le score de solvabilité n'est plus lu depuis `/creditScores` mais
- * recalculé en direct à partir de `/repayments` (voir
+ * Les scores de solvabilité sont désormais lus directement depuis
+ * `/credit-scores`, déjà tenus à jour côté serveur (voir
  * `DashboardService.getAdminUsersManagement`).
  */
-function flushLoad(httpMock: HttpTestingController, users: User[], repayments: Repayment[]): void {
+function flushLoad(httpMock: HttpTestingController, users: User[], creditScores: CreditScore[]): void {
   const usersReqs = httpMock.match(`${API}/users`).filter((req) => !req.cancelled);
   expect(usersReqs.length).toBe(1);
   usersReqs[0].flush(users);
 
-  const repaymentReqs = httpMock.match(`${API}/repayments`).filter((req) => !req.cancelled);
-  expect(repaymentReqs.length).toBe(1);
-  repaymentReqs[0].flush(repayments);
+  const creditScoreReqs = httpMock.match(`${API}/credit-scores`).filter((req) => !req.cancelled);
+  expect(creditScoreReqs.length).toBe(1);
+  creditScoreReqs[0].flush(creditScores);
 }
 
 describe('AdminUsersComponent', () => {
@@ -119,40 +117,30 @@ describe('AdminUsersComponent', () => {
     expect(text).toContain(expected);
   });
 
-  it('3. affiche le score de solvabilité et sa catégorie quand il existe, recalculé à partir des remboursements réels', () => {
+  it('3. affiche le score de solvabilité et sa catégorie tels que renvoyés par le serveur', () => {
     const users = [makeUser({ id: 'u1' })];
-    const repayments = [
-      makeRepayment({ id: 'rp1', userId: 'u1' }),
-      makeRepayment({ id: 'rp2', userId: 'u1', installmentNumber: 2, dueDate: '2026-07-01T00:00:00.000Z', paymentDate: '2026-07-01T00:00:00.000Z' }),
-    ];
-    const expected = computeCreditScore(repayments);
+    const creditScore = makeCreditScore({ userId: 'u1', score: 72, category: CreditScoreCategory.BON });
     const { component, fixture, httpMock } = setup();
 
-    flushLoad(httpMock, users, repayments);
+    flushLoad(httpMock, users, [creditScore]);
     fixture.detectChanges();
 
-    expect(component.creditScoreFor('u1')?.score).toBe(expected.score);
+    expect(component.creditScoreFor('u1')?.score).toBe(72);
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain(String(expected.score));
+    expect(text).toContain('72');
     expect(text).toContain('Bon');
   });
 
-  it("affiche un score de base (pas de tiret) quand l'utilisateur n'a pas encore d'historique de remboursement", () => {
+  it("affiche un tiret quand l'utilisateur n'a pas encore de score de solvabilité (aucun prêt)", () => {
     const users = [makeUser({ id: 'u1' })];
-    const expected = computeCreditScore([]);
     const { component, fixture, httpMock } = setup();
 
     flushLoad(httpMock, users, []);
     fixture.detectChanges();
 
-    // Le score de solvabilité n'est jamais absent côté Admin : à défaut
-    // d'historique, il est recalculé à partir d'une liste vide plutôt que
-    // de dépendre d'un ancien enregistrement `/creditScores` potentiellement
-    // inexistant.
-    expect(component.creditScoreFor('u1')?.score).toBe(expected.score);
+    expect(component.creditScoreFor('u1')).toBeUndefined();
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain(String(expected.score));
-    expect(text).toContain('Bon');
+    expect(text).toContain('—');
   });
 
   it('4. filtre les utilisateurs par nom, email ou numéro de compte (recherche)', () => {
@@ -247,7 +235,7 @@ describe('AdminUsersComponent', () => {
     expect(component.filteredUsers().length).toBe(2);
   });
 
-  it("7. suspend un utilisateur CLIENT après confirmation", () => {
+  it('7. suspend un utilisateur CLIENT après confirmation', () => {
     const users = [makeUser({ id: 'u1', status: UserStatus.ACTIVE })];
     const { component, httpMock } = setup();
 
@@ -260,9 +248,8 @@ describe('AdminUsersComponent', () => {
     component.confirmAction();
     expect(component.actionSubmitting()).toBe(true);
 
-    const req = httpMock.expectOne(`${API}/users/u1`);
-    expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ status: UserStatus.SUSPENDED });
+    const req = httpMock.expectOne(`${API}/users/u1/suspend`);
+    expect(req.request.method).toBe('POST');
     req.flush({ ...user, status: UserStatus.SUSPENDED });
 
     expect(component.actionSubmitting()).toBe(false);
@@ -282,9 +269,8 @@ describe('AdminUsersComponent', () => {
 
     component.confirmAction();
 
-    const req = httpMock.expectOne(`${API}/users/u1`);
-    expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ status: UserStatus.ACTIVE });
+    const req = httpMock.expectOne(`${API}/users/u1/activate`);
+    expect(req.request.method).toBe('POST');
     req.flush({ ...user, status: UserStatus.ACTIVE });
 
     expect(component.filteredUsers()[0].status).toBe(UserStatus.ACTIVE);
@@ -301,7 +287,7 @@ describe('AdminUsersComponent', () => {
     component.cancelAction();
 
     expect(component.pendingAction()).toBeNull();
-    httpMock.expectNone(`${API}/users/u1`);
+    httpMock.expectNone(`${API}/users/u1/suspend`);
   });
 
   it("9. un ADMIN ne peut jamais être suspendu ou réactivé depuis cet écran", () => {
@@ -319,7 +305,8 @@ describe('AdminUsersComponent', () => {
     component.requestActivate(admin);
     expect(component.pendingAction()).toBeNull();
 
-    httpMock.expectNone(`${API}/users/u1`);
+    httpMock.expectNone(`${API}/users/u1/suspend`);
+    httpMock.expectNone(`${API}/users/u1/activate`);
   });
 
   it('10. affiche une erreur quand le chargement échoue, avec possibilité de réessayer', () => {
@@ -347,7 +334,7 @@ describe('AdminUsersComponent', () => {
     component.requestSuspend(component.filteredUsers()[0]);
     component.confirmAction();
 
-    httpMock.expectOne(`${API}/users/u1`).flush('Erreur', { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(`${API}/users/u1/suspend`).flush('Erreur', { status: 500, statusText: 'Server Error' });
 
     expect(component.actionError()).toBe(
       "Impossible de mettre à jour le statut de l'utilisateur. Veuillez réessayer.",

@@ -15,7 +15,6 @@ import { Observable, catchError, map, of } from 'rxjs';
 import { LoanService } from '../../../../core/services/loan.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserService } from '../../../../core/services/user.service';
-import { Loan, LoanStatus } from '../../../../core/models/loan.model';
 import { formatCurrency, isEligibleForLoanRequest } from '../../../../core/utils/loan-display.util';
 import { scheduleTotalDue } from '../../../../core/utils/loan-schedule.util';
 import {
@@ -91,7 +90,11 @@ export class ClientLoanFormComponent {
     );
   });
 
-  /** Simulation en direct de la mensualité, tant que le montant et la durée saisis sont valides. */
+  /**
+   * Simulation en direct, purement indicative : le montant réellement
+   * appliqué est recalculé et persisté côté serveur à la création (voir
+   * `LoanService.requestLoan`), cet aperçu ne sert qu'à guider la saisie.
+   */
   readonly simulation = computed(() => {
     this.formValue();
     const amount = Number(this.form.get('amount')?.value);
@@ -194,27 +197,13 @@ export class ClientLoanFormComponent {
     const amount = Number(this.form.get('amount')?.value);
     const purpose = String(this.form.get('purpose')?.value).trim();
     const durationMonths = Number(this.form.get('durationMonths')?.value);
-    const monthlyPayment = Math.round((amount + (amount * DEFAULT_INTEREST_RATE) / 100) / durationMonths);
-
-    const loan: Omit<Loan, 'id'> = {
-      userId: user.id,
-      amount,
-      interestRate: DEFAULT_INTEREST_RATE,
-      durationMonths,
-      monthlyPayment,
-      // Total réellement dû (capital + intérêts), cohérent avec l'échéancier
-      // généré à l'approbation (voir `scheduleTotalDue` / `generateInstallments`).
-      remainingBalance: scheduleTotalDue({ monthlyPayment, durationMonths }),
-      status: LoanStatus.EN_ATTENTE,
-      purpose,
-      requestDate: new Date().toISOString(),
-    };
 
     this.submitting.set(true);
     this.successMessage.set(null);
     this.errorMessage.set(null);
 
-    this.loanService.create(loan).subscribe({
+    // Taux, mensualité et total dû sont calculés et persistés côté serveur.
+    this.loanService.requestLoan(amount, purpose, durationMonths).subscribe({
       next: () => {
         this.successMessage.set('Votre demande de prêt a été envoyée avec succès.');
         // Ne réinitialise que les champs saisis : `eligibility` ne porte
@@ -225,8 +214,8 @@ export class ClientLoanFormComponent {
         this.submitting.set(false);
         this.showConfirmModal.set(false);
       },
-      error: () => {
-        this.errorMessage.set("Impossible d'envoyer la demande de prêt. Veuillez réessayer.");
+      error: (err: { error?: { message?: string } }) => {
+        this.errorMessage.set(err?.error?.message ?? "Impossible d'envoyer la demande de prêt. Veuillez réessayer.");
         this.submitting.set(false);
         this.showConfirmModal.set(false);
       },

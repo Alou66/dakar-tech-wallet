@@ -1,15 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
 
 import { CreditScore } from '../models/credit-score.model';
 import { Loan } from '../models/loan.model';
-import { Repayment } from '../models/repayment.model';
 import { Transaction } from '../models/transaction.model';
 import { User } from '../models/user.model';
-import { computeCreditScore } from '../utils/credit-score.util';
 import { CreditScoreService } from './credit-score.service';
 import { LoanService } from './loan.service';
-import { RepaymentService } from './repayment.service';
 import { TransactionService } from './transaction.service';
 import { UserService } from './user.service';
 
@@ -56,7 +53,6 @@ export class DashboardService {
   private readonly transactionService = inject(TransactionService);
   private readonly loanService = inject(LoanService);
   private readonly creditScoreService = inject(CreditScoreService);
-  private readonly repaymentService = inject(RepaymentService);
 
   getClientDashboard(userId: string): Observable<ClientDashboardData> {
     return forkJoin({
@@ -75,22 +71,12 @@ export class DashboardService {
     });
   }
 
-  /**
-   * Le score de solvabilité affiché côté Admin est toujours recalculé à
-   * partir de l'historique réel des remboursements (`computeCreditScore`,
-   * la même fonction que côté client), jamais lu depuis la dernière valeur
-   * persistée dans `/creditScores` qui peut être périmée.
-   */
+  /** Les scores de solvabilité sont désormais lus directement, déjà tenus à jour côté serveur. */
   getAdminUsersManagement(): Observable<AdminUsersManagementData> {
     return forkJoin({
       users: this.userService.getAll(),
-      repayments: this.repaymentService.getAll(),
-    }).pipe(
-      map(({ users, repayments }) => ({
-        users,
-        creditScores: this.computeLiveCreditScores(users, repayments),
-      })),
-    );
+      creditScores: this.creditScoreService.getAll(),
+    });
   }
 
   getAdminTransactionsManagement(): Observable<AdminTransactionsManagementData> {
@@ -104,37 +90,7 @@ export class DashboardService {
     return forkJoin({
       loans: this.loanService.getAll(),
       users: this.userService.getAll(),
-      repayments: this.repaymentService.getAll(),
-    }).pipe(
-      map(({ loans, users, repayments }) => ({
-        loans,
-        users,
-        creditScores: this.computeLiveCreditScores(users, repayments),
-      })),
-    );
-  }
-
-  private computeLiveCreditScores(users: User[], repayments: Repayment[]): CreditScore[] {
-    const repaymentsByUser = new Map<string, Repayment[]>();
-    for (const repayment of repayments) {
-      const existing = repaymentsByUser.get(repayment.userId) ?? [];
-      existing.push(repayment);
-      repaymentsByUser.set(repayment.userId, existing);
-    }
-
-    const calculatedAt = new Date().toISOString();
-    return users.map((user) => {
-      const breakdown = computeCreditScore(repaymentsByUser.get(user.id) ?? []);
-      return {
-        id: `live-${user.id}`,
-        userId: user.id,
-        score: breakdown.score,
-        category: breakdown.category,
-        totalLoans: breakdown.totalLoans,
-        onTimeRepayments: breakdown.onTimeCount,
-        lateRepayments: breakdown.lateCount,
-        calculatedAt,
-      };
+      creditScores: this.creditScoreService.getAll(),
     });
   }
 }
